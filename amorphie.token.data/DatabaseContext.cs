@@ -17,11 +17,11 @@ namespace amorphie.token.data
 
     public class DatabaseContext : DbContext
     {
-        public DbSet<TokenInfo> Tokens{get;set;}
+        public DbSet<TokenInfo> Tokens { get; set; }
 
         public DatabaseContext(DbContextOptions<DatabaseContext> options) : base(options)
         {
-            
+
         }
     }
 }

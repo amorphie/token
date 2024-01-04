@@ -8,5 +8,5 @@ namespace amorphie.token.core.Models.MockData;
 
 public class UserStore
 {
-   
+
 }

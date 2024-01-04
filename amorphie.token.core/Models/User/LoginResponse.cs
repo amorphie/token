@@ -15,15 +15,15 @@ public class LoginResponse
     public Phone? MobilePhone { get; set; } = new Phone();
 
     public string Reference { get; set; } = string.Empty;
-    public string State {get;set;}
-    public Guid Id{get;set;}
+    public string State { get; set; }
+    public Guid Id { get; set; }
 }
 
 public class Phone
 {
-    public int CountryCode{get;set;}
-    public int Prefix{get;set;}
-    public string Number{get;set;}
+    public int CountryCode { get; set; }
+    public int Prefix { get; set; }
+    public string Number { get; set; }
 
     public override string ToString()
     {

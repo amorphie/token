@@ -8,7 +8,8 @@ namespace amorphie.token.core.Exceptions;
 public class ServiceException : Exception
 {
     public int Code { get; set; }
-    public ServiceException(int code,string message) : base(message) {
+    public ServiceException(int code, string message) : base(message)
+    {
         Code = code;
     }
 }

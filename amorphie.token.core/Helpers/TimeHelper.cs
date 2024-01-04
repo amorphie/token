@@ -10,7 +10,7 @@ public class TimeHelper
     public static int ConvertStrDurationToSeconds(string durationIfo)
     {
         var durationType = durationIfo.Last();
-        var numericPart = durationIfo.Substring(0,durationIfo.Length - 1);
+        var numericPart = durationIfo.Substring(0, durationIfo.Length - 1);
         switch (durationType)
         {
             case 'm':

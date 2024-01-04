@@ -10,24 +10,24 @@ public class TagServiceLocal : ITagService
         _httpClientFactory = httpClientFactory;
     }
 
-    public async Task<Dictionary<string,dynamic>> GetTagInfo(string domain, string entity, string tagName, string queryString)
+    public async Task<Dictionary<string, dynamic>> GetTagInfo(string domain, string entity, string tagName, string queryString)
     {
         var httpClient = _httpClientFactory.CreateClient("Tag");
         var httpResponseMessage = await httpClient.GetAsync(
             $"tag/{domain}/{entity}/{tagName}{queryString}");
 
-        if(httpResponseMessage.IsSuccessStatusCode)
+        if (httpResponseMessage.IsSuccessStatusCode)
         {
             var user = await httpResponseMessage.Content.ReadFromJsonAsync<dynamic>();
-            if(user == null)
+            if (user == null)
             {
-                throw new ServiceException((int)Errors.InvalidUser,"Tag not found with provided info");
-            }         
-            return user;   
+                throw new ServiceException((int)Errors.InvalidUser, "Tag not found with provided info");
+            }
+            return user;
         }
         else
         {
-            throw new ServiceException((int)Errors.InvalidUser,"Tag Endpoint Did Not Response Successfully");
+            throw new ServiceException((int)Errors.InvalidUser, "Tag Endpoint Did Not Response Successfully");
         }
     }
 }

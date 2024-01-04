@@ -7,5 +7,5 @@ namespace amorphie.token.core.Models.Token;
 
 public class TokenInfoRequest
 {
-    public string token{get;set;}
+    public string token { get; set; }
 }
