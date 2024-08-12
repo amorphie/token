@@ -1,14 +1,19 @@
-using System.Text;
+
+using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Unicode;
 using amorphie.core.Extension;
 using amorphie.token;
 using amorphie.token.core;
-using amorphie.token.core.Models.Profile;
+using amorphie.token.core.Constants;
 using amorphie.token.data;
 using amorphie.token.Middlewares;
 using amorphie.token.Modules.Login;
 using amorphie.token.Modules.OtpProcess;
+using amorphie.token.Modules.ThirdFactor;
+using amorphie.token.Modules.TokenFlow;
 using amorphie.token.Services.Card;
+using amorphie.token.Services.Cardion;
 using amorphie.token.Services.ClaimHandler;
 using amorphie.token.Services.Consent;
 using amorphie.token.Services.FlowHandler;
@@ -21,8 +26,11 @@ using amorphie.token.Services.Profile;
 using amorphie.token.Services.Role;
 using amorphie.token.Services.TransactionHandler;
 using Elastic.Apm.NetCoreAll;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
+using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json.Linq;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Refit;
 using Serilog;
 using Serilog.Formatting.Compact;
@@ -48,9 +56,11 @@ internal partial class Program
             }
         }
 
-
         await builder.Configuration.AddVaultSecrets(builder.Configuration["DAPR_SECRET_STORE_NAME"], new string[] { "ServiceConnections" });
 
+        // builder.Configuration.AddDaprSecretStore(builder.Configuration["DAPR_SECRET_STORE_NAME"],client, TimeSpan.FromSeconds(15));
+        // builder.Configuration.AddJsonStream(new MemoryStream(System.Text.Encoding.ASCII.GetBytes(builder.Configuration["Fcm"])));
+        
         builder.Services.AddAntiforgery(x =>
         {
             x.SuppressXFrameOptionsHeader = true;
@@ -82,10 +92,25 @@ internal partial class Program
         builder.Services.AddControllersWithViews();
         builder.Services.AddDaprClient();
         builder.Services.AddHttpContextAccessor();
-        builder.Services.AddDistributedMemoryCache();
+        builder.Services.AddDataProtection()
+        .SetApplicationName("AmorphieToken")
+        .UseCryptographicAlgorithms(
+        new AuthenticatedEncryptorConfiguration
+        {
+            EncryptionAlgorithm = EncryptionAlgorithm.AES_256_CBC,
+            ValidationAlgorithm = ValidationAlgorithm.HMACSHA256
+        })
+        .PersistKeysToDbContext<DatabaseContext>();
+        builder.Services.AddStackExchangeRedisCache(options => {
+            options.Configuration = builder.Configuration["RedisConnection"];
+            options.InstanceName = "TokenRedisInstance";
+        });
+
         builder.Services.AddSession(opt =>
         {
             opt.Cookie.Name = ".amorphie.token";
+            opt.Cookie.Domain = ".burgan.com.tr";
+            opt.Cookie.MaxAge = TimeSpan.FromSeconds(300);
         });
 
         builder.Services.AddEndpointsApiExplorer();
@@ -222,8 +247,7 @@ internal partial class Program
         builder.Services.AddScoped<ILoginService, LoginService>();
         builder.Services.AddScoped<ILegacySSOService, LegacySSOService>();
 
-
-
+        builder.Services.AddSingleton<CollectionUsers>();
 
 
         builder.Services.AddRefitClient<IProfile>()
@@ -242,6 +266,13 @@ internal partial class Program
 
         builder.Services.AddRefitClient<IPasswordRememberCard>()
         .ConfigureHttpClient(c => c.BaseAddress = new Uri(builder.Configuration["cardValidationUri"]!));
+        
+        builder.Services.AddRefitClient<ICardionService>()
+            .ConfigureHttpClient(c =>
+            {
+                c.BaseAddress = new Uri(builder.Configuration["Cardion:BaseAddress"]!);
+                c.DefaultRequestHeaders.Add("Authorization", builder.Configuration["Cardion:ApiKey"]!);
+            });
 
         builder.Services.AddHttpClient("Enqura", httpClient =>
         {
@@ -259,6 +290,11 @@ internal partial class Program
         .Bind(builder.Configuration.GetSection("CardValidation"));
 
         var app = builder.Build();
+        app.Use((context, next) =>
+        {
+            context.Request.EnableBuffering();
+            return next();
+        });
         app.UseAllElasticApm(app.Configuration);
 
         app.UseTransactionMiddleware();
@@ -268,13 +304,17 @@ internal partial class Program
         var db = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         db.Database.Migrate();
       
-        var migrateService = scope.ServiceProvider.GetRequiredService<IMigrationService>();
-        await migrateService.MigrateStaticData();
-
+        if (app.Environment.IsDevelopment())
+        {
+            var migrateService = scope.ServiceProvider.GetRequiredService<IMigrationService>();
+            await migrateService.MigrateStaticData();
+        }
         app.MapHealthChecks("/health");
 
         app.MapLoginWorkflowEndpoints();
         app.MapOtpProcessWorkflowEndpoints();
+        app.MapThirdFactorWorkflowEndpoints();
+        app.MapTokenFlowEndpoints();
 
         // Configure the HTTP request pipeline.
         if (!app.Environment.IsDevelopment())

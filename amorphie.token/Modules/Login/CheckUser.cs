@@ -36,6 +36,8 @@ namespace amorphie.token.Modules.Login
             variables.wrongCredentials = false;
             variables.disableUser = false;
 
+            if(!request.ClientId.Equals("backoffice"))
+            {
             var userResponse = await internetBankingUserService.GetUser(request.Username!);
             if (userResponse.StatusCode != 200)
             {
@@ -77,7 +79,7 @@ namespace amorphie.token.Modules.Login
                 });
 
                 variables.status = false;
-                variables.message = ErrorHelper.GetErrorMessage(LoginErrors.WrongPassword, langCode); ;
+                variables.message = ErrorHelper.GetErrorMessage(LoginErrors.WrongPassword, langCode); 
                 passwordRecord.AccessFailedCount = (passwordRecord.AccessFailedCount ?? 0) + 1;
                 variables.PasswordTryCount = passwordRecord.AccessFailedCount;
                 variables.wrongCredentials = true;
@@ -191,6 +193,23 @@ namespace amorphie.token.Modules.Login
 
             await ibContext.SaveChangesAsync();
             return Results.Ok(variables);
+            }
+            else
+            {
+                var amorphieUserResult = await userService.Login(new LoginRequest() { Reference = request.Username!, Password = request.Password! });
+                if(amorphieUserResult.StatusCode != 200)
+                {
+                    variables.status = false;
+                    variables.message = ErrorHelper.GetErrorMessage(LoginErrors.WrongPassword, langCode); 
+                    variables.PasswordTryCount = 0;
+                    variables.wrongCredentials = true;
+                }
+                var amorphieUser = amorphieUserResult.Response;
+                variables.userSerialized = JsonSerializer.Serialize(amorphieUser);
+                variables.Reference = amorphieUser.Reference;
+                variables.status = true;
+                return Results.Ok(variables);
+            }
         }
     }
     

@@ -245,6 +245,7 @@ namespace amorphie.token.Services.ClaimHandler
 
         private object? GetPropertyValue(object? src, string propName)
         {
+            Console.WriteLine("prop name:"+propName);
             if (src == null) throw new ArgumentException("Value cannot be null.", "src");
             if (propName == null) throw new ArgumentException("Value cannot be null.", "propName");
 
@@ -272,7 +273,7 @@ namespace amorphie.token.Services.ClaimHandler
                     }
                 }
                 
-                return property != null ? property.GetValue(src, null).ToString() : null;
+                return property != null ? property.GetValue(src, null)?.ToString() : null;
             }
         }
         public async Task<List<Claim>> PopulateClaims(List<string> clientClaims, LoginResponse? user, SimpleProfileResponse? profile = null, ConsentResponse? consent = null, core.Models.Collection.User? collectionUser = null)

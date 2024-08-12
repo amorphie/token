@@ -59,7 +59,10 @@ async function preLogin()
         },
         body:JSON.stringify(req)
     });
-    console.log(response);
+    console.log("Geldi test");
+    var resp = await response.json();
+    window.location = resp.redirectUri;
+    console.log(resp);
     if(response.redirected)
         window.location = response.url;
 

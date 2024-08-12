@@ -1,4 +1,3 @@
-
 using System.Text;
 using System.Text.Json;
 using amorphie.token.core.Dtos;
@@ -9,15 +8,18 @@ namespace amorphie.token.Services.User;
 public class UserServiceLocal : IUserService
 {
     private readonly IHttpClientFactory _httpClientFactory;
+
     public UserServiceLocal(IHttpClientFactory httpClientFactory)
     {
         _httpClientFactory = httpClientFactory;
     }
 
-    public async Task<ServiceResponse<object>> CheckDevice(Guid userId, string clientId, string deviceId, Guid installationId)
+    public async Task<ServiceResponse<object>> CheckDevice(Guid userId, string clientId, string deviceId,
+        Guid installationId)
     {
         var httpClient = _httpClientFactory.CreateClient("User");
-        var httpResponseMessage = await httpClient.GetAsync($"userDevice/check-device/{clientId}/{userId}/{deviceId}/{installationId}");
+        var httpResponseMessage =
+            await httpClient.GetAsync($"userDevice/check-device/{clientId}/{userId}/{deviceId}/{installationId}");
 
         if (httpResponseMessage.IsSuccessStatusCode)
         {
@@ -29,16 +31,19 @@ public class UserServiceLocal : IUserService
         }
     }
 
-    public async Task<ServiceResponse<CheckDeviceWithoutUserResponseDto>> CheckDeviceWithoutUser(string clientId, string deviceId, Guid installationId)
+    public async Task<ServiceResponse<CheckDeviceWithoutUserResponseDto>> CheckDeviceWithoutUser(string clientId,
+        string deviceId, Guid installationId)
     {
         var httpClient = _httpClientFactory.CreateClient("User");
-        var httpResponseMessage = await httpClient.GetAsync($"userDevice/check-device-without-user/{clientId}/{deviceId}/{installationId}");
+        var httpResponseMessage =
+            await httpClient.GetAsync($"userDevice/check-device-without-user/{clientId}/{deviceId}/{installationId}");
 
         if (httpResponseMessage.IsSuccessStatusCode)
         {
             var response = await httpResponseMessage.Content.ReadAsStringAsync();
             var responseObject = JsonSerializer.Deserialize<CheckDeviceWithoutUserResponseDto>(response);
-            return new ServiceResponse<CheckDeviceWithoutUserResponseDto>() { StatusCode = 200, Response = responseObject };
+            return new ServiceResponse<CheckDeviceWithoutUserResponseDto>()
+                { StatusCode = 200, Response = responseObject };
         }
         else
         {
@@ -57,13 +62,14 @@ public class UserServiceLocal : IUserService
             var user = await httpResponseMessage.Content.ReadFromJsonAsync<LoginResponse>();
             if (user == null)
             {
-                throw new ServiceException((int)Errors.InvalidUser, "User not found with provided info");
+                return new ServiceResponse<LoginResponse>() { StatusCode = 404  };
             }
+
             return new ServiceResponse<LoginResponse>() { StatusCode = 200, Response = user };
         }
         else
         {
-            throw new ServiceException((int)Errors.InvalidUser, "User Endpoint Did Not Response Successfully");
+            return new ServiceResponse<LoginResponse>() { StatusCode = (int)httpResponseMessage.StatusCode  };
         }
     }
 
@@ -80,6 +86,7 @@ public class UserServiceLocal : IUserService
             {
                 throw new ServiceException((int)Errors.InvalidUser, "User not found with provided info");
             }
+
             return new ServiceResponse<LoginResponse>() { StatusCode = 200, Response = user };
         }
         else
@@ -108,7 +115,8 @@ public class UserServiceLocal : IUserService
     public async Task<ServiceResponse> SaveDevice(UserSaveMobileDeviceDto userSaveMobileDeviceDto)
     {
         var httpClient = _httpClientFactory.CreateClient("User");
-        var request = new StringContent(JsonSerializer.Serialize(userSaveMobileDeviceDto), Encoding.UTF8, "application/json");
+        var request = new StringContent(JsonSerializer.Serialize(userSaveMobileDeviceDto), Encoding.UTF8,
+            "application/json");
         var httpResponseMessage = await httpClient.PostAsync(
             "userDevice/save-mobile-device-client", request);
 
@@ -151,6 +159,7 @@ public class UserServiceLocal : IUserService
             {
                 throw new ServiceException((int)Errors.InvalidUser, "User not found with provided info");
             }
+
             return new ServiceResponse<LoginResponse>() { StatusCode = 200, Response = user };
         }
         else
@@ -159,10 +168,12 @@ public class UserServiceLocal : IUserService
         }
     }
 
-    public async Task<ServiceResponse> MigrateSecurityQuestion(MigrateSecurityQuestionRequest migrateSecurityQuestionRequest)
+    public async Task<ServiceResponse> MigrateSecurityQuestion(
+        MigrateSecurityQuestionRequest migrateSecurityQuestionRequest)
     {
         var httpClient = _httpClientFactory.CreateClient("User");
-        var request = new StringContent(JsonSerializer.Serialize(migrateSecurityQuestionRequest), Encoding.UTF8, "application/json");
+        var request = new StringContent(JsonSerializer.Serialize(migrateSecurityQuestionRequest), Encoding.UTF8,
+            "application/json");
         var httpResponseMessage = await httpClient.PostAsync(
             "userSecurityQuestion/migrate", request);
 
@@ -172,14 +183,16 @@ public class UserServiceLocal : IUserService
         }
         else
         {
-            return new ServiceResponse() { StatusCode = (int)httpResponseMessage.StatusCode, Detail = "Migrate Security Question Error" };
+            return new ServiceResponse()
+                { StatusCode = (int)httpResponseMessage.StatusCode, Detail = "Migrate Security Question Error" };
         }
     }
 
     public async Task<ServiceResponse> MigrateSecurityImage(MigrateSecurityImageRequest migrateSecurityImageRequest)
     {
         var httpClient = _httpClientFactory.CreateClient("User");
-        var request = new StringContent(JsonSerializer.Serialize(migrateSecurityImageRequest), Encoding.UTF8, "application/json");
+        var request = new StringContent(JsonSerializer.Serialize(migrateSecurityImageRequest), Encoding.UTF8,
+            "application/json");
         var httpResponseMessage = await httpClient.PostAsync(
             "userSecurityImage/migrate", request);
 
@@ -189,14 +202,17 @@ public class UserServiceLocal : IUserService
         }
         else
         {
-            return new ServiceResponse() { StatusCode = (int)httpResponseMessage.StatusCode, Detail = "Migrate Security Image Error" };
+            return new ServiceResponse()
+                { StatusCode = (int)httpResponseMessage.StatusCode, Detail = "Migrate Security Image Error" };
         }
     }
 
-    public async Task<ServiceResponse> MigrateSecurityQuestions(List<SecurityQuestionRequestDto> securityQuestionRequestDtos)
+    public async Task<ServiceResponse> MigrateSecurityQuestions(
+        List<SecurityQuestionRequestDto> securityQuestionRequestDtos)
     {
         var httpClient = _httpClientFactory.CreateClient("User");
-        var request = new StringContent(JsonSerializer.Serialize(securityQuestionRequestDtos), Encoding.UTF8, "application/json");
+        var request = new StringContent(JsonSerializer.Serialize(securityQuestionRequestDtos), Encoding.UTF8,
+            "application/json");
         var httpResponseMessage = await httpClient.PostAsync(
             "userSecurityQuestion/migrateQuestions", request);
 
@@ -206,14 +222,30 @@ public class UserServiceLocal : IUserService
         }
         else
         {
-            return new ServiceResponse() { StatusCode = (int)httpResponseMessage.StatusCode, Detail = "Migrate Security Questions Error" };
+            return new ServiceResponse()
+                { StatusCode = (int)httpResponseMessage.StatusCode, Detail = "Migrate Security Questions Error" };
         }
+    }
+
+    public async Task<ServiceResponse<GetPublicDeviceDto>> GetPublicDevice(string clientCode, string reference)
+    {
+        var httpClient = _httpClientFactory.CreateClient("User");
+        var httpResponseMessage = await httpClient.GetAsync($"public/device/{clientCode}/{reference}");
+
+        if (httpResponseMessage.IsSuccessStatusCode)
+        {
+            var device = await httpResponseMessage.Content.ReadFromJsonAsync<GetPublicDeviceDto>();
+            return new ServiceResponse<GetPublicDeviceDto>() { StatusCode = 200, Detail = "Success", Response = device };
+        }
+
+        return new ServiceResponse<GetPublicDeviceDto>() { StatusCode = 404, Detail = "Device Not Found"};
     }
 
     public async Task<ServiceResponse> MigrateSecurityImages(List<SecurityImageRequestDto> securityImageRequestDtos)
     {
         var httpClient = _httpClientFactory.CreateClient("User");
-        var request = new StringContent(JsonSerializer.Serialize(securityImageRequestDtos), Encoding.UTF8, "application/json");
+        var request = new StringContent(JsonSerializer.Serialize(securityImageRequestDtos), Encoding.UTF8,
+            "application/json");
         var httpResponseMessage = await httpClient.PostAsync(
             "userSecurityImage/migrateImages", request);
 
@@ -223,7 +255,8 @@ public class UserServiceLocal : IUserService
         }
         else
         {
-            return new ServiceResponse() { StatusCode = (int)httpResponseMessage.StatusCode, Detail = "Migrate Security Images Error" };
+            return new ServiceResponse()
+                { StatusCode = (int)httpResponseMessage.StatusCode, Detail = "Migrate Security Images Error" };
         }
     }
 
@@ -238,8 +271,10 @@ public class UserServiceLocal : IUserService
             var questions = await httpResponseMessage.Content.ReadFromJsonAsync<IEnumerable<SecurityQuestionDto>>();
             if (questions == null)
             {
-                return new ServiceResponse<IEnumerable<SecurityQuestionDto>>() { StatusCode = 200, Response = questions };
+                return new ServiceResponse<IEnumerable<SecurityQuestionDto>>()
+                    { StatusCode = 200, Response = questions };
             }
+
             return new ServiceResponse<IEnumerable<SecurityQuestionDto>>() { StatusCode = 200, Response = questions };
         }
         else
@@ -261,6 +296,7 @@ public class UserServiceLocal : IUserService
             {
                 return new ServiceResponse<IEnumerable<SecurityImageDto>>() { StatusCode = 404, Response = images };
             }
+
             return new ServiceResponse<IEnumerable<SecurityImageDto>>() { StatusCode = 200, Response = images };
         }
         else
@@ -273,7 +309,7 @@ public class UserServiceLocal : IUserService
     {
         var httpClient = _httpClientFactory.CreateClient("User");
         var httpResponseMessage = await httpClient.GetAsync(
-            "userSecurityQuestion/getLastSecurityQuestion/"+id);
+            "userSecurityQuestion/getLastSecurityQuestion/" + id);
 
         if (httpResponseMessage.IsSuccessStatusCode)
         {
@@ -282,6 +318,7 @@ public class UserServiceLocal : IUserService
             {
                 return new ServiceResponse<UserSecurityQuestionDto>() { StatusCode = 404, Response = lastQuestion };
             }
+
             return new ServiceResponse<UserSecurityQuestionDto>() { StatusCode = 200, Response = lastQuestion };
         }
         else
@@ -294,7 +331,7 @@ public class UserServiceLocal : IUserService
     {
         var httpClient = _httpClientFactory.CreateClient("User");
         var httpResponseMessage = await httpClient.GetAsync(
-            "userSecurityImage/getLastSecurityImage/"+id);
+            "userSecurityImage/getLastSecurityImage/" + id);
 
         if (httpResponseMessage.IsSuccessStatusCode)
         {
@@ -303,6 +340,7 @@ public class UserServiceLocal : IUserService
             {
                 return new ServiceResponse<UserSecurityImageDto>() { StatusCode = 404, Response = lastImage };
             }
+
             return new ServiceResponse<UserSecurityImageDto>() { StatusCode = 200, Response = lastImage };
         }
         else
@@ -315,7 +353,7 @@ public class UserServiceLocal : IUserService
     {
         var httpClient = _httpClientFactory.CreateClient("User");
         var httpResponseMessage = await httpClient.GetAsync(
-            "userClaim/getByUserId/"+userId);
+            "userClaim/getByUserId/" + userId);
 
         if (httpResponseMessage.IsSuccessStatusCode)
         {
@@ -324,11 +362,29 @@ public class UserServiceLocal : IUserService
             {
                 return new ServiceResponse<IEnumerable<UserClaimDto>>() { StatusCode = 404, Response = null };
             }
+
             return new ServiceResponse<IEnumerable<UserClaimDto>>() { StatusCode = 200, Response = userClaims };
         }
         else
         {
             throw new ServiceException(500, "User Endpoint Did Not Response Successfully");
+        }
+    }
+
+    public async Task<ServiceResponse<ActiveDeviceDto>> CheckDevice(string reference, string clientId)
+    {
+        var httpClient = _httpClientFactory.CreateClient("User");
+        var httpResponseMessage = await httpClient.GetAsync($"public/device/{clientId}/{reference}");
+
+        if (httpResponseMessage.IsSuccessStatusCode)
+        {
+            var raw = await httpResponseMessage.Content.ReadAsStringAsync();
+            var device = JsonSerializer.Deserialize<ActiveDeviceDto>(raw,new JsonSerializerOptions{PropertyNameCaseInsensitive = true});
+            return new ServiceResponse<ActiveDeviceDto>() { StatusCode = 200, Response = device };
+        }
+        else
+        {
+            return new ServiceResponse<ActiveDeviceDto>() { StatusCode = 404, Detail = "Device Not Found" };
         }
     }
 }
