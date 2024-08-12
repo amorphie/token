@@ -1,4 +1,5 @@
 using amorphie.token.core.Models.Token;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -15,11 +16,12 @@ namespace amorphie.token.data
         }
     }
 
-    public class DatabaseContext : DbContext
+    public class DatabaseContext : DbContext,IDataProtectionKeyContext
     {
         public DbSet<TokenInfo> Tokens { get; set; }
         public DbSet<Logon> Logon { get; set; }
         public DbSet<FailedLogon> FailedLogon { get; set; }
+        public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
 
 
         public DatabaseContext(DbContextOptions<DatabaseContext> options) : base(options)

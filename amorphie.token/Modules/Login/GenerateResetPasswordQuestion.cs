@@ -25,7 +25,8 @@ public static class GenerateResetPasswordQuestion
                 .OrderByDescending(q => q.CreatedAt).FirstOrDefaultAsync();
 
         PasswordHasher passwordHasher = new();
-        var answer = passwordHasher.DecryptString(securityQuestion.EncryptedAnswer, securityQuestion.Id.ToString("N")).Trim();
+        // var answer = passwordHasher.DecryptString(securityQuestion.EncryptedAnswer, securityQuestion.Id.ToString("N")).Trim();
+        var answer = securityQuestion.EncryptedAnswer;
 
         var securityQuestionDefined = await ibContext.QuestionDefinition.Where(q => q.IsActive && q.Id == securityQuestion.DefinitionId).Select(
                     q => new

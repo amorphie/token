@@ -11,5 +11,7 @@ namespace amorphie.token.Services.MessagingGateway
     {
         [Post("/api/v2/Messaging/sms/message/string")]
         Task<MessageResponse> SendSms(SmsRequest request);
+        [Post("/api/v2/Messaging/push-notification/templated")]
+        Task<MessageResponse> SendPush(PushRequest request);
     }
 }

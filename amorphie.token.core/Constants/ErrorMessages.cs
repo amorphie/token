@@ -83,5 +83,32 @@ namespace amorphie.token.core.Constants
             { LoginErrors.NotAuthorized, NotAuthorized },
             { LoginErrors.General, General }
         };
+
+        public static readonly Dictionary<string, string> OldIdentityCard = new()
+        {
+            {"tr-TR","Yeni şifre alma işlemine devam edebilmemiz için yeni tip TC kimlik kartınız olmalıdır.Detaylı bilgi için 0850 222 29 10 numaralı Müşteri İletişim Merkezimiz ile iletişime geçebilirsiniz."},
+            {"en-EN","To proceed with the process of obtaining a new password, you must have the new type of Turkish ID card. For detailed information, you can contact our Customer Communication Center at 0850 222 29 10."},
+            {"en-US","To proceed with the process of obtaining a new password, you must have the new type of Turkish ID card. For detailed information, you can contact our Customer Communication Center at 0850 222 29 10."}
+        };
+
+        public static readonly Dictionary<string, string> HasNotNfcAndNewIdentityCard = new()
+        {
+            {"tr-TR","Hizmet saatleri dışında olduğumuz için şifre alma sürecinize devam edilemedi. 08.00 - 01.00 saatleri arasında görüntülü görüşme ile müşteri temsilcimize bağlanarak veya NFC özelliği bulunan bir cihaz ile yeni şifre alma sürecine devam edebilirsiniz."},
+            {"en-EN","Your password retrieval process could not be completed as we are outside of service hours. You can continue the process by connecting with our customer representative via video call between 08:00 - 01:00, or by using a device with NFC capability."},
+            {"en-US","Your password retrieval process could not be completed as we are outside of service hours. You can continue the process by connecting with our customer representative via video call between 08:00 - 01:00, or by using a device with NFC capability."}
+        };
+
+        public static readonly Dictionary<string, string> WrongCardInfo = new()
+        {
+            {"tr-TR","Girdiğiniz kart bilgisi yanlış. Yeni şifre almak için lütfen bilgileri kontrol ediniz."},
+            {"en-EN","The card information you entered is incorrect. Please check the information to obtain a new password."},
+            {"en-US","The card information you entered is incorrect. Please check the information to obtain a new password."}
+        };
+         public static readonly Dictionary<string, string> WrongQuestionAnswer = new()
+        {
+            {"tr-TR","Girdiğiniz kart bilgisi yanlış. Yeni şifre almak için lütfen bilgileri kontrol ediniz."},
+            {"en-EN","The card information you entered is incorrect. Please check the information to obtain a new password."},
+            {"en-US","The card information you entered is incorrect. Please check the information to obtain a new password."}
+        };
     }
 }

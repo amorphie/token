@@ -18,15 +18,33 @@ namespace amorphie.token.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.1")
+                .HasAnnotation("ProductVersion", "8.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FriendlyName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Xml")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DataProtectionKeys");
+                });
+
             modelBuilder.Entity("amorphie.token.core.Models.Token.FailedLogon", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<string>("ClientId")
@@ -49,7 +67,7 @@ namespace amorphie.token.Migrations
 
                     b.HasIndex("Reference");
 
-                    b.ToTable("FailedLogon", (string)null);
+                    b.ToTable("FailedLogon");
                 });
 
             modelBuilder.Entity("amorphie.token.core.Models.Token.Logon", b =>
@@ -90,7 +108,7 @@ namespace amorphie.token.Migrations
 
                     b.HasIndex("WorkflowInstanceId");
 
-                    b.ToTable("Logon", (string)null);
+                    b.ToTable("Logon");
                 });
 
             modelBuilder.Entity("amorphie.token.core.Models.Token.TokenInfo", b =>
@@ -142,7 +160,7 @@ namespace amorphie.token.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Tokens", (string)null);
+                    b.ToTable("Tokens");
                 });
 
             modelBuilder.Entity("amorphie.token.core.Models.Token.FailedLogon", b =>

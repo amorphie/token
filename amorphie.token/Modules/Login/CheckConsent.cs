@@ -63,6 +63,8 @@ namespace amorphie.token.Modules.Login
             {
                 variables.Add("hasConsent", false);
             }
+
+            // variables.Add("BusinessLine",userInfo.profile.businessLine);
         
 
 

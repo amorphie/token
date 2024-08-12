@@ -28,6 +28,10 @@ namespace amorphie.token.Modules.OtpProcess
                 code += rand.Next(10);
             }
 
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            if (env != null && !env.Equals("Prod"))
+            code = "123456";
+
             await daprClient.SaveStateAsync(configuration["DAPR_STATE_STORE_NAME"], $"{transactionId}_ThirdFactor_Otp_Code", code, metadata: new Dictionary<string, string> { { "ttlInSeconds", "180" } });
 
             var otpRequest = new

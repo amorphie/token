@@ -9,8 +9,12 @@
   <title>Document</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Asap:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Asap:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="/ebanking/login/assets/css/css/style.css">
+  <link rel="stylesheet" href="/ebanking/login/assets/css/_LoginLayout.css" />
+  <link rel="stylesheet" href="/ebanking/login/assets/css/css/bootstrap-4.1.3/css/bootstrap.min.css" />
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
 
 </head>
@@ -28,76 +32,63 @@
       </div>
       <div class="content two-columns mb-2 has-divider">
         <form id="login-form" asp-action="CollectionLogin" asp-controller="Login" method="post">
-            <input type="hidden" asp-for="TransactionId" />
-            <input type="hidden" asp-for="Code" />
-            <div class="content-inner">
+          <input type="hidden" asp-for="TransactionId" />
+          <input type="hidden" asp-for="Code" />
+          <div class="content-inner">
             <div class="title mb-4">
-                Bireysel İnternet Bankacılığına Hoşgeldiniz
+              Burganbank Collection Tahsilat Uygulamasına Hoşgeldiniz
             </div>
 
             <div class="login-form mb-4">
-                <label class="input mb-2">
+              <label class="input mb-2">
                 <div class="icon">
-                    <img src="/ebanking/login/assets/person.svg" />
+                  <img src="/ebanking/login/assets/person.svg" />
                 </div>
 
                 <input type="text" asp-for="UserName" placeholder="Kimlik/Vergi Numarası" />
-                </label>
+              </label>
 
-                <label class="input mb-2">
+              <label class="input mb-2">
                 <div class="icon">
-                    <img src="/ebanking/login/assets/lock.svg" />
+                  <img src="/ebanking/login/assets/lock.svg" />
                 </div>
 
                 <input type="text" asp-for="Password" size="12" class="flex-1" placeholder="Şifre" type="password" />
 
-                <div class="forgot-password">
-                    Unuttum
-                </div>
-                </label>
 
-                <div class="flex gap-1">
-                <div class="button qr-button items-center justify-center">
-                    <img src="/ebanking/login/assets/qr.svg" />
+              </label>
+              <div class="flex gap-1">
+                <div class="button qrButton qr-button items-center justify-center">
+                  <img src="/ebanking/login/assets/qr.svg" />
                 </div>
 
-                <div id="submit-login" class="button login-button flex-1 flex items-center justify-center">
-                    GİRİŞ YAP
+
+                <div id="submit-login" class="button Lbutton login-button flex-1 flex items-center justify-center">
+                  GİRİŞ YAP
                 </div>
+              </div>
+              @if (ViewBag.HasError)
+              {
+                <div class="form-group mt-3">
+                  <div class="ErrPan validation-summary-errors text-center">
+                        @ViewBag.ErrorDetail
+                  </div>
                 </div>
+              }
+
+
             </div>
 
-            <div class="create-user">
-                Yeni Kullanıcı Oluştur
-            </div>
-            </div>
 
-            <div class="content-inner">
-            <div class="content-title flex items-center gap-1 mb-4">
-                <img src="/ebanking/login/assets/security.svg" /> İnternet Bankacılığı Güvenlik
-            </div>
 
-            <p>Burgan Bank İnternet Bankacılığı ortamında donanım, yazılım, network ve erişim platformları günümüz teknolojisine uygun olarak kurulmuş olup güncel tutulmaktadır.</p>
+          </div>
 
-            <p>İnternet Bankacılığı giriş sayfasında cep telefon numarası, marka ve model bilgisi istenmemektedir</p>
 
-            <p>Cep telefonunuza dijital/mobil sertifika için gönderilen linkleri açmayınız, bu linklerden yükleme yapmayınız.</p>
-
-            <p>Adres çubuğunda görselinin bulunduğu ve tıklandığında açılan sertifikada Burgan Bank yazdığını kontrol ediniz.</p>
-
-            <a href="#">Daha detaylı bilgi almak için tıklayın...</a>
-            </div>
         </form>
       </div>
       <div class="footer">
         <div class="footer-links">
-          <a class="footer-link">
-            Müşteri Ol
-          </a>
-          <div class="footer-divider"></div>
-          <a class="footer-link">
-            Bize Ulaşın
-          </a>
+
         </div>
         <div class="footer-contact">
           <div class="footer-contact-number">
@@ -110,8 +101,13 @@
       </div>
     </div>
   </div>
-  <script src="/ebanking/login/assets/js/site.js"></script>
-  <script src="/ebanking/login/assets/js/signal.js"></script>
+  <script>
+    var submitButton = document.getElementById("submit-login");
+    var loginForm = document.getElementById('login-form');
+    submitButton.addEventListener('click', async function (e) {
+      loginForm.submit();
+    });
+  </script>
 </body>
 
 </html>

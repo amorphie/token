@@ -32,7 +32,7 @@ namespace amorphie.token.Modules.Login
             dynamic targetObject = new System.Dynamic.ExpandoObject();
 
             targetObject.Data = dataChanged;
-
+        
             var requestBodySerialized = body.GetProperty("requestBody").ToString();
             TokenRequest requestBody = JsonSerializer.Deserialize<TokenRequest>(requestBodySerialized, new JsonSerializerOptions
             {
@@ -53,12 +53,21 @@ namespace amorphie.token.Modules.Login
                 PropertyNameCaseInsensitive = true
             });
 
-            var profileSerialized = body.GetProperty("userInfoSerialized").ToString();
-
-            SimpleProfileResponse profile = JsonSerializer.Deserialize<SimpleProfileResponse>(profileSerialized, new JsonSerializerOptions
+            SimpleProfileResponse? profile;
+            try
             {
-                PropertyNameCaseInsensitive = true
-            });
+                var profileSerialized = body.GetProperty("userInfoSerialized").ToString();
+
+                profile = JsonSerializer.Deserialize<SimpleProfileResponse>(profileSerialized, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+            }
+            catch (System.Exception)
+            {
+                profile = null;
+            }
+            
 
             string xforwardedfor = body.GetProperty("Headers").GetProperty("xforwardedfor").ToString();
             var ipAddress = xforwardedfor.Split(",")[0].Trim();

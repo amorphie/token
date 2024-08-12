@@ -18,14 +18,14 @@ public static class EkycAdditionalDataContstants
                             type="primary",
                             itemNo=1,
                             text = "Onayla",
-                            action="exit",
+                            action="Exit",
                             transition = "amorphie-ekyc-exit"
                         },
                         new EkycButtonModel{
                             type="secondary",
                             itemNo=2,
                             text="Görüntülü Görüşmeye Devam Et",
-                            action="cancel"
+                            action="Cancel"
                         }
                     }
         },
@@ -49,14 +49,14 @@ public static class EkycAdditionalDataContstants
                             type="primary",
                             itemNo=1,
                             text = "Onayla",
-                            action="exit",
+                            action="Exit",
                             transition = "amorphie-ekyc-exit"
                         },
                         new EkycButtonModel{
                             type="secondary",
                             itemNo=2,
                             text="Görüntülü Görüşmeye Devam Et",
-                            action="cancel"
+                            action="Cancel"
                         }
                     }
         },
@@ -66,14 +66,14 @@ public static class EkycAdditionalDataContstants
                      type="primary",
                      itemNo=1,
                      text = "Yeniden Dene",
-                     action="retry",
+                     action="Retry",
                   },
                   new EkycButtonModel
                   {
                      type="secondary",
                      itemNo=2,
                      text="Giriş Ekranına Dön",
-                     action="exit",
+                     action="Exit",
                      transition = "amorphie-ekyc-exit"
                   }
                 }
@@ -96,14 +96,14 @@ public static class EkycAdditionalDataContstants
                             type="primary",
                             itemNo=1,
                             text = "Onayla",
-                            action="exit",
+                            action="Exit",
                             transition = "amorphie-ekyc-exit"
                         },
                         new EkycButtonModel{
                             type="secondary",
                             itemNo=2,
                             text="Görüntülü Görüşmeye Devam Et",
-                            action="cancel"
+                            action="Cancel"
                         }
                     }
         },
@@ -113,7 +113,7 @@ public static class EkycAdditionalDataContstants
                      type="primary",
                      itemNo=1,
                      text = "Yeniden Dene",
-                     action="retry",
+                     action="Retry",
                   }
                 }
     };
@@ -136,14 +136,14 @@ public static class EkycAdditionalDataContstants
                             type="primary",
                             itemNo=1,
                             text = "Onayla",
-                            action="exit",
+                            action="Exit",
                             transition = "amorphie-ekyc-exit"
                         },
                         new EkycButtonModel{
                             type="secondary",
                             itemNo=2,
                             text="Görüntülü Görüşmeye Devam Et",
-                            action="cancel"
+                            action="Cancel"
                         }
                     }
         },
@@ -153,7 +153,7 @@ public static class EkycAdditionalDataContstants
                      type="primary",
                      itemNo=1,
                      text = "Yeniden Dene",
-                     action="retry",
+                     action="Retry",
                   }
                 }
     };
@@ -175,14 +175,14 @@ public static class EkycAdditionalDataContstants
                             type="primary",
                             itemNo=1,
                             text = "Onayla",
-                            action="exit",
+                            action="Exit",
                             transition = "amorphie-ekyc-exit"
                         },
                         new EkycButtonModel{
                             type="secondary",
                             itemNo=2,
                             text="Görüntülü Görüşmeye Devam Et",
-                            action="cancel"
+                            action="Cancel"
                         }
                     }
         },
@@ -208,14 +208,14 @@ public static class EkycAdditionalDataContstants
                             type="primary",
                             itemNo=1,
                             text = "Onayla",
-                            action="exit",
+                            action="Exit",
                             transition = "amorphie-ekyc-exit"
                         },
                         new EkycButtonModel{
                             type="secondary",
                             itemNo=2,
                             text="Görüntülü Görüşmeye Devam Et",
-                            action="cancel"
+                            action="Cancel"
                         }
                     }
         },
@@ -225,7 +225,7 @@ public static class EkycAdditionalDataContstants
                      type="primary",
                      itemNo=1,
                      text = "Yeniden Dene",
-                     action="retry",
+                     action="Retry",
                   }
                 }
 
@@ -249,14 +249,14 @@ public static class EkycAdditionalDataContstants
                             type="primary",
                             itemNo=1,
                             text = "Onayla",
-                            action="exit",
+                            action="Exit",
                             transition = "amorphie-ekyc-exit"
                         },
                         new EkycButtonModel{
                             type="secondary",
                             itemNo=2,
                             text="Görüntülü Görüşmeye Devam Et",
-                            action="cancel"
+                            action="Cancel"
                         }
                     }
         },
@@ -266,14 +266,14 @@ public static class EkycAdditionalDataContstants
                      type="primary",
                      itemNo=1,
                      text = "Yeniden Dene",
-                     action="retry",
+                     action="Retry",
                   },
                   new EkycButtonModel
                   {
                      type="secondary",
                      itemNo=2,
                      text="Görüntülü Görüşmeye Bağlan",
-                     action="skip"
+                     action="Skip"
 
                   }
                 }
@@ -301,14 +301,14 @@ public static class EkycAdditionalDataContstants
                             type="primary",
                             itemNo=1,
                             text = "Onayla",
-                            action="exit",
+                            action="Exit",
                             transition = "amorphie-ekyc-finish"
                         },
                         new EkycButtonModel{
                             type="secondary",
                             itemNo=2,
                             text="Görüntülü Görüşmeye Devam Et",
-                            action="cancel"
+                            action="Cancel"
                         }
                     }
         },
@@ -376,14 +376,14 @@ public static class EkycAdditionalDataContstants
                             type="primary",
                             itemNo=1,
                             text = "Onayla",
-                            action="exit",
+                            action="Exit",
                             transition = "amorphie-ekyc-exit"
                         },
                         new EkycButtonModel{
                             type="secondary",
                             itemNo=2,
                             text="Görüntülü Görüşmeye Devam Et",
-                            action="cancel"
+                            action="Cancel"
                         }
                     }
         },
@@ -393,7 +393,7 @@ public static class EkycAdditionalDataContstants
                      type="primary",
                      itemNo=1,
                      text = "Yeniden Dene",
-                     action="retry",
+                     action="Retry",
                   }
                 }
 
@@ -416,14 +416,14 @@ public static class EkycAdditionalDataContstants
                             type="primary",
                             itemNo=1,
                             text = "Onayla",
-                            action="exit",
+                            action="Exit",
                             transition = "amorphie-ekyc-exit"
                         },
                         new EkycButtonModel{
                             type="secondary",
                             itemNo=2,
                             text="Görüntülü Görüşmeye Devam Et",
-                            action="cancel"
+                            action="Cancel"
                         }
                     }
         },
@@ -433,14 +433,14 @@ public static class EkycAdditionalDataContstants
                      type="primary",
                      itemNo=1,
                      text = "Yeniden Dene",
-                     action="retry",
+                     action="Retry",
                   },
                   new EkycButtonModel
                   {
                      type="secondary",
                      itemNo=2,
                      text="Görüntülü Görüşmeye Bağlan",
-                     action="skip"
+                     action="Skip"
 
                   }
                 }
@@ -463,14 +463,14 @@ public static class EkycAdditionalDataContstants
                             type="primary",
                             itemNo=1,
                             text = "Onayla",
-                            action="exit",
+                            action="Exit",
                             transition = "amorphie-ekyc-exit"
                         },
                         new EkycButtonModel{
                             type="secondary",
                             itemNo=2,
                             text="Görüntülü Görüşmeye Devam Et",
-                            action="cancel"
+                            action="Cancel"
                         }
             },
 
@@ -510,7 +510,7 @@ public static class EkycAdditionalDataContstants
                 itemNo=1,
                 text="Giriş Ekranına Dön",
                 action="Exit",
-                transition="amorphie-ekyc-finish"
+                transition="amorphie-ekyc-exit"
              }
         }
     };
@@ -534,14 +534,14 @@ public static class EkycAdditionalDataContstants
                             type="primary",
                             itemNo=1,
                             text = "Onayla",
-                            action="exit",
+                            action="Exit",
                             transition = "amorphie-ekyc-exit"
                         },
                         new EkycButtonModel{
                             type="secondary",
                             itemNo=2,
                             text="Görüntülü Görüşmeye Devam Et",
-                            action="cancel"
+                            action="Cancel"
                         }
             },
 
@@ -552,14 +552,14 @@ public static class EkycAdditionalDataContstants
                      type="primary",
                      itemNo=1,
                      text = "Yeniden Dene",
-                     action="retry",
+                     action="Retry",
                   },
                   new EkycButtonModel
                   {
                      type="secondary",
                      itemNo=2,
                      text="Giriş Ekranına Dön",
-                     action="exit",
+                     action="Exit",
                      transition ="amorphie-ekyc-exit"
 
                   }
@@ -751,7 +751,7 @@ public static class EkycAdditionalDataContstants
                     type="secondary",
                     itemNo=2,
                     text="Görüşmeye Devam Et",
-                    action="cancel"
+                    action="Cancel"
 
                 }
             }
@@ -761,7 +761,7 @@ public static class EkycAdditionalDataContstants
                     type= "primary",
                     itemNo = 1,
                     text = "Giriş Ekranına Dön",
-                    action = "exit",
+                    action = "Exit",
                     transition = "amorphie-ekyc-exit"
             }
         }
@@ -796,7 +796,7 @@ public static class EkycAdditionalDataContstants
                     type="secondary",
                     itemNo=2,
                     text="Görüşmeye Devam Et",
-                    action="cancel"
+                    action="Cancel"
 
                 }
             }
@@ -806,7 +806,7 @@ public static class EkycAdditionalDataContstants
                     type= "primary",
                     itemNo = 1,
                     text = "Giriş Ekranına Dön",
-                    action = "exit",
+                    action = "Exit",
                     transition = "amorphie-ekyc-exit"
             }
         }

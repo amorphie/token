@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using amorphie.token.core.Models.Consent;
+using amorphie.token.core.Models.InternetBanking;
 using amorphie.token.core.Models.Profile;
 using amorphie.token.data;
 using amorphie.token.Services.ClaimHandler;
@@ -119,7 +120,12 @@ ITransactionService transactionService, IRoleService roleService, IbDatabaseCont
                 Response = null
             };
         }
-        
+
+        public Task<ServiceResponse<TokenResponse>> GenerateTokenWithRefreshTokenFromWorkflowAsync(TokenInfo refreshTokenInfo, ClientResponse client, LoginResponse user, SimpleProfileResponse? profile, IBUser? dodgeUser, int? dodgeRoleKey, ConsentResponse? consent)
+        {
+            throw new NotImplementedException();
+        }
+
         private async Task<ServiceResponse<ClientResponse>> GetClient(string clientCode, string? clientSecret = null)
         {
             ServiceResponse<ClientResponse> clientResponse;

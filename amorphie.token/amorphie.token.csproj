@@ -13,16 +13,18 @@
   <ItemGroup>
     <PackageReference Include="amorphie.core" Version="1.1.26" />
     <PackageReference Include="amorphie.core.security" Version="1.0.0" />
-    <PackageReference Include="Dapr.AspNetCore" Version="1.12.0" />
-    <PackageReference Include="Dapr.Client" Version="1.12.0" />
-    <PackageReference Include="Dapr.Extensions.Configuration" Version="1.12.0" />
+    <PackageReference Include="Dapr.AspNetCore" Version="1.13.0" />
+    <PackageReference Include="Dapr.Client" Version="1.13.0" />
+    <PackageReference Include="Dapr.Extensions.Configuration" Version="1.13.0" />
     <PackageReference Include="jose-jwt" Version="4.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="8.0.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="$(EfCoreVersion)">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="$(EfCoreVersion)" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="$(EfCoreVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.7" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="$(EfCoreVersion)" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="7.3.1" />
     <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="6.5.0" />
