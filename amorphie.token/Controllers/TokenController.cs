@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 using Microsoft.IdentityModel.Tokens;
 using Swashbuckle.AspNetCore.Annotations;
 using System.IdentityModel.Tokens.Jwt;
@@ -13,21 +12,12 @@ using amorphie.token.Services.Consent;
 using amorphie.token.Services.TransactionHandler;
 using amorphie.token.core.Extensions;
 using System.Security.Claims;
-using Newtonsoft.Json.Linq;
-using MongoDB.Bson.IO;
-using Newtonsoft.Json;
+
 using JsonSerializer = System.Text.Json.JsonSerializer;
 using System.Security.Cryptography;
-using System.Net.Mime;
-using amorphie.token.Modules.Login;
-using Amazon.Internal;
-using System.Configuration;
 using System.Dynamic;
-using System.Net;
-using amorphie.core.Enums;
-using Microsoft.AspNetCore.Http.HttpResults;
-using System.Text.Json.Serialization;
-using System.Globalization;
+using Microsoft.AspNetCore.WebUtilities;
+
 
 
 namespace amorphie.token.core.Controllers;
@@ -46,6 +36,9 @@ public class TokenController : Controller
     private readonly ITransactionService _transactionService;
     private readonly IConsentService _consentService;
     private readonly IProfileService _profileService;
+
+    public object Base64UrlDecode { get; private set; }
+
     public TokenController(ILogger<TokenController> logger, ITokenService tokenService, IUserService userService, DatabaseContext databaseContext
     , IConfiguration configuration, DaprClient daprClient, IClientService clientService, IInternetBankingUserService ibUserService, ITransactionService transactionService,
     IFlowHandler flowHandler, IConsentService consentService, IProfileService profileService)
@@ -65,13 +58,32 @@ public class TokenController : Controller
 
     }
 
-    [HttpGet(".well-known/openid-configuration")]
-    public  IActionResult tt(string code_verifier)
+    [HttpGet(".well-known/{clientCode}/openid-configuration")]
+    public async Task<IActionResult> OpenIdConfiguration(string clientCode)
     {
+        var basepath = $"{Request.Scheme}://{Request.Host}";
+
+        var clientResponse = await _clientService.CheckClientByCode(clientCode);
+        if(clientResponse.StatusCode != 200)
+        {
+            return StatusCode(404);
+        }
+        var client = clientResponse.Response;
+
+        var idTokenInfo = client!.tokens?.FirstOrDefault(t => t.type.Equals(2));
         return Ok(new 
         {
-            authorization_endpoint= _configuration["Basepath"]+"/public/Authorize",
-            token_endpoint = _configuration["Basepath"]+"/public/Token"
+            issuer = basepath,
+            authorization_endpoint= basepath+"/ebanking/Authorize",
+            token_endpoint = basepath+"/ebanking/token",
+            userinfo_endpoint = basepath + "/ebanking/token/get-user-info",
+            jwks_uri = basepath + "/ebanking/token/jwks",
+            response_types_supported = new string[]{"code"},
+            scopes_supported = new string[]{"openid","profile"},
+            grant_types_supported = client.allowedgranttypes?.Select(g => g.GrantType) ?? [],
+            subject_types_supported = new string[] { "public", "pairwise" },
+            id_token_signing_alg_values_supported = new string[]{"RS256"},
+            claims_supported = idTokenInfo?.claims?.Select(c => c.Split("|")[0]).Distinct() ?? []
         });
     }
 
@@ -246,9 +258,12 @@ public class TokenController : Controller
             return Results.Json(new { active = false });
         }
 
-        var secretKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(client.jwtSalt!));
+        RSACryptoServiceProvider provider = new RSACryptoServiceProvider();
+        provider.FromXmlString(_configuration["RsaPublicKey"]!);
+            
+        RsaSecurityKey rsaSecurityKey = new RsaSecurityKey(provider);
 
-        if (!JwtHelper.ValidateToken(token, "BurganIam", client!.returnuri, secretKey, out JwtSecurityToken? validatedToken))
+        if (!JwtHelper.ValidateToken(token, "BurganIam", client!.returnuri, rsaSecurityKey, out JwtSecurityToken? validatedToken))
         {
             return Results.Json(new { active = false });
         }

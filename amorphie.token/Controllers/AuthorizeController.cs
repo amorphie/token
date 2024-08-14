@@ -13,10 +13,11 @@ using System.Security.Cryptography;
 using Microsoft.IdentityModel.Tokens;
 using amorphie.token.Services.Role;
 using System.Collections.ObjectModel;
+using System.Dynamic;
 
 
 namespace amorphie.token.core.Controllers;
- 
+
 public class AuthorizeController : Controller
 {
     private readonly ILogger<AuthorizeController> _logger;
@@ -136,6 +137,14 @@ public class AuthorizeController : Controller
         }
         
         
+    }
+
+    [HttpGet("/ebanking/token/jwks")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> Jwks()
+    {
+        var jwks = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(_configuration!["Jwk"]!);
+        return Ok(await Task.FromResult(jwks));
     }
     
     [HttpGet("/private/Logout")]
@@ -314,7 +323,7 @@ public class AuthorizeController : Controller
             var consent = consentResponse!.Response!;
             var consentData = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(consent!.additionalData!);
 
-            if(consent!.state!.Equals("Y"))
+            if(consent!.state!.Equals("K"))
             {
                 return BadRequest();
             }
@@ -631,7 +640,7 @@ public class AuthorizeController : Controller
         // var content = new StringContent(JsonSerializer.Serialize(new{
         //     grant_type = "client_credentials",
         //     client_id = "IbAndroidApp",
-        //     client_secret = "6b7b82a9-a072-4191-9f07-2d1cf45e58fe",
+        //     client_secret = "",
         //     scopes = new string[] { "openId","retail-customer"}
         // }),Encoding.UTF8,"application/json");
         // var resp = await httpClient.PostAsync("https://test-pubagw6.burgan.com.tr/ebanking/token",content);
@@ -650,6 +659,12 @@ public class AuthorizeController : Controller
             Scope = authorizationRequest.Scope,
             State = authorizationRequest.State
         });
+
+        if(authorize.StatusCode != 200)
+        {
+            var errorModel = authorize.GetErrorDetail();
+            return Problem(detail:errorModel.Detail, statusCode: errorModel.StatusCode);
+        }
 
         var loggedUserSerialized = HttpContext.Session.GetString("LoggedUser");
         if(string.IsNullOrWhiteSpace(loggedUserSerialized))

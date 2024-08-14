@@ -246,8 +246,12 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
             await _daprClient.SaveStateAsync(Configuration["DAPR_STATE_STORE_NAME"], $"{_tokenInfoDetail!.AccessTokenId.ToString()}_privateClaims", dictFromPrivateClaims, metadata: new Dictionary<string, string> { { "ttlInSeconds", (_tokenInfoDetail.AccessTokenDuration+60).ToString() } });
         }
 
-        var secretKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_client.jwtSalt!));
-        var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha384);
+        RSACryptoServiceProvider provider1 = new RSACryptoServiceProvider();
+
+        provider1.FromXmlString(Configuration["RsaPrivateKey"]!);
+
+        RsaSecurityKey rsaSecurityKey1 = new RsaSecurityKey(provider1);
+        var signinCredentials = new SigningCredentials(rsaSecurityKey1, SecurityAlgorithms.RsaSha256);
 
         var expires = DateTime.UtcNow.AddSeconds(accessDuration);
 

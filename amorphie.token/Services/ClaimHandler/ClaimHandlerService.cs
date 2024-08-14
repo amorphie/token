@@ -58,11 +58,12 @@ namespace amorphie.token.Services.ClaimHandler
                     var tagName = claimPath[3];
                     var fieldName = claimPath[4];
 
-                    var tagData = await _tagService.GetTagInfo(domain, entity, tagName, _queryStringForTag!);
-                    if (tagData == null)
+                    var tagDataResponse = await _tagService.GetTagInfo(domain, entity, tagName, _queryStringForTag!);
+                    if (tagDataResponse.StatusCode != 200)
                         return null;
+                    var tagData = tagDataResponse.Response;
 
-                    return tagData[fieldName]?.ToString() ?? null;
+                    return tagData![fieldName]?.ToString() ?? null;
 
                 }
                 catch (Exception ex)
@@ -159,11 +160,12 @@ namespace amorphie.token.Services.ClaimHandler
                     var tagName = claimPath[3];
                     var fieldName = claimPath[4];
 
-                    var tagData = await _tagService.GetTagInfo(domain, entity, tagName, _queryStringForTag!);
-                    if (tagData == null)
+                    var tagDataResponse = await _tagService.GetTagInfo(domain, entity, tagName, _queryStringForTag!);
+                    if (tagDataResponse.StatusCode != 200)
                         return null;
+                    var tagData = tagDataResponse.Response;
 
-                    return tagData[fieldName].ToString();
+                    return tagData![fieldName]?.ToString() ?? null;
 
                 }
                 catch (Exception ex)
@@ -245,7 +247,6 @@ namespace amorphie.token.Services.ClaimHandler
 
         private object? GetPropertyValue(object? src, string propName)
         {
-            Console.WriteLine("prop name:"+propName);
             if (src == null) throw new ArgumentException("Value cannot be null.", "src");
             if (propName == null) throw new ArgumentException("Value cannot be null.", "propName");
 
@@ -295,7 +296,7 @@ namespace amorphie.token.Services.ClaimHandler
             {
                 _user = user;
                 _queryStringForTag = string.Empty;
-                _queryStringForTag += "?reference=" + _user!.Reference;
+                _queryStringForTag += "?user_reference=" + _user!.Reference;
                 _queryStringForTag += "&mail=" + _user!.EMail;
                 _queryStringForTag += "&phone=" + _user!.MobilePhone!.ToString();
             }
