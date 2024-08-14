@@ -117,7 +117,7 @@ public class AuthorizationService : ServiceBase, IAuthorizationService
                 };
             }
 
-            if(!client!.returnuri!.Equals(request.RedirectUri))
+            if(!client!.returnuri!.Equals(request.RedirectUri) && !string.IsNullOrWhiteSpace(request.RedirectUri))
             {
                 return new ServiceResponse<AuthorizationResponse>()
                 {
@@ -164,7 +164,7 @@ public class AuthorizationService : ServiceBase, IAuthorizationService
             var authCode = new AuthorizationCode
             {
                 ClientId = client.id,
-                RedirectUri = request.RedirectUri,
+                RedirectUri = client.returnuri,
                 RequestedScopes = requestedScopes,
                 CodeChallenge = request.CodeChallange,
                 CodeChallengeMethod = request.CodeChallangeMethod,
