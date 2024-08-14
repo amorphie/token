@@ -126,6 +126,9 @@ public static class EkycPrepare
         // dataChanged.additionalData.customerSurname = registerResult.Surname;
         dataChanged.additionalData.instanceId = instance;
         dataChanged.additionalData.applicantFullName = ApplicantFullName;
+        dataChanged.additionalData.isMediaServerActive = false;
+        dataChanged.additionalData.ekycEnvironment = "preprod";
+
         dataChanged.additionalData.pages = new List<EkycPageModel>{
             new EkycPageModel
             {

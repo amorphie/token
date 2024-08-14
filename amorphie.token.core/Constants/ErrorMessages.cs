@@ -110,5 +110,15 @@ namespace amorphie.token.core.Constants
             {"en-EN","The card information you entered is incorrect. Please check the information to obtain a new password."},
             {"en-US","The card information you entered is incorrect. Please check the information to obtain a new password."}
         };
+
+         public static readonly Dictionary<string, string> EkycOcrMaxTryCountError = new()
+        {
+            {"tr-TR","Yaptığınız denemeler sonucunda güvenliğiniz sebebiyle şifre yenileme sürecini ilerletemiyoruz. Dilerseniz 0850 222 29 10 numaralı Müşteri İletişim Merkezimiz ile iletişime geçebilirsiniz."},
+            {"en-EN","As a result of your attempts, we cannot proceed with the password renewal process due to your security. If you wish, you can contact our Customer Communications Center at 0850 222 29 10."},
+            {"en-US","As a result of your attempts, we cannot proceed with the password renewal process due to your security. If you wish, you can contact our Customer Communications Center at 0850 222 29 10."}
+        };
+
+
+
     }
 }

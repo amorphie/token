@@ -359,6 +359,86 @@ public static class EkycAdditionalDataContstants
         }
     };
 
+    public static readonly EkycPageModel SkipFaceForVideoCall = new EkycPageModel
+    {
+        type = "confirm",
+        image = "confirm",
+        title = "Görüntülü Görüşmeye Aktarılacaksınız",
+        navText = "Müşterimiz Ol",
+        subTexts = new List<string>
+        {
+            "Görüntülü görüşme kayıt altına alınacaktır.",
+            "Görüntülü olarak gerçekleşecek görüşmenizin kayıt altına alınmasını onaylıyor musunuz?"
+        },
+        popUp = new EkycPopUpModel
+        {
+
+            title = "Görüntülü Görüşmeyi Sonlandırmak İstediğinize Emin Misiniz?",
+            subTexts = new List<string> { "Görüntülü görüşme işleminiz sonlandırılacaktır, onaylıyor musunuz?" },
+            buttons = new List<EkycButtonModel>{
+                        new EkycButtonModel{
+                            type="primary",
+                            itemNo=1,
+                            text = "Onayla",
+                            action="Exit",
+                            transition = "amorphie-ekyc-finish"
+                        },
+                        new EkycButtonModel{
+                            type="secondary",
+                            itemNo=2,
+                            text="Görüntülü Görüşmeye Devam Et",
+                            action="Cancel"
+                        }
+                    }
+        },
+        popUpVideoCall = new EkycPopUpModel
+        {
+            title = "Görüntülü Görüşmeyi Sonlandırmak İstediğinize Emin Misiniz?",
+            subTexts = new List<string>{
+                "Görüntülü görüşme işleminiz sonlandırılacaktır, onaylıyor musunuz?",
+                "Yardıma ihtiyaç duymanız durumunda <b>0850 222 29 10</b> numaralı telefondan bizi 7/24 arayabilirsiniz."
+            },
+            buttons = new List<EkycButtonModel>{
+                new EkycButtonModel
+                {
+                    type="primary",
+                    itemNo=1,
+                    text="Onayla",
+                    action="Exit",
+                    transition="amorphie-ekyc-finish"
+                },
+                 new EkycButtonModel
+                {
+                    type="secondary",
+                    itemNo=2,
+                    text="Görüşmeye Devam Et",
+                    action="Cancel"
+
+                },
+            }
+        },
+        buttons = new List<EkycButtonModel>
+        {
+            new EkycButtonModel
+                {
+                    type="primary",
+                    itemNo=1,
+                    text="Onayla ve Bağlan",
+                    action="ConfirmConnect"
+
+                },
+                new EkycButtonModel
+                {
+                    type="secondary",
+                    itemNo=2,
+                    text="Giriş Ekranına Dön",
+                    action="Exit",
+                    transition="amorphie-ekyc-exit"
+                },
+        }
+    };
+
+
     public static readonly EkycPageModel FaceFailedMinForRetry = new EkycPageModel
     {
         type = "error",

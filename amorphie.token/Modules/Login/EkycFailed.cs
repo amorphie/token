@@ -58,7 +58,8 @@ public static class EkycFailed
 
     Console.WriteLine(body.ToString());
     var transitionName = body.GetProperty("LastTransition").ToString();
-    var failStepName = body.GetProperty("FailedStepName").ToString();
+    var failedStepName = body.GetProperty("FailedStepName").ToString();
+    var callType = body.GetProperty("CallType").ToString();
     var dataBody = body.GetProperty($"TRX-{transitionName}").GetProperty("Data");
     dynamic dataChanged = Newtonsoft.Json.JsonConvert.DeserializeObject<ExpandoObject>(dataBody.ToString());
 
@@ -71,6 +72,14 @@ public static class EkycFailed
     dataChanged.additionalData.exitTransition = "amorphie-ekyc-exit";
     dynamic variables = new Dictionary<string, dynamic>();
     // variables here !
+    if (failedStepName == "ocr")
+    {
+      variables.Add("EkycResult", EkycResultConstants.FailedOcrMaxTryCount);
+      variables.Add("EkycButton", "None");
+      variables.Add("EkycCallType", callType);
+      
+    }
+
 
     targetObject.Data = dataChanged;
     targetObject.TriggeredBy = Guid.Parse(body.GetProperty($"TRX-{transitionName}").GetProperty("TriggeredBy").ToString());
