@@ -7,6 +7,7 @@ using amorphie.token.Services.Profile;
 using amorphie.token.Services.Consent;
 using amorphie.token.core.Models.Profile;
 using System.Text.Json;
+using System.Web;
 
 namespace amorphie.token.Services.Authorization;
 
@@ -117,7 +118,7 @@ public class AuthorizationService : ServiceBase, IAuthorizationService
                 };
             }
 
-            if(!client!.returnuri!.Equals(request.RedirectUri) && !string.IsNullOrWhiteSpace(request.RedirectUri))
+            if(!client!.returnuri!.Equals(HttpUtility.UrlDecode(request.RedirectUri)) && !string.IsNullOrWhiteSpace(request.RedirectUri))
             {
                 return new ServiceResponse<AuthorizationResponse>()
                 {
