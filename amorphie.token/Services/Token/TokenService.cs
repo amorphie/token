@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using amorphie.token.core.Dtos;
 using amorphie.token.core.Models.Consent;
 using amorphie.token.core.Models.InternetBanking;
 using amorphie.token.core.Models.Profile;
@@ -248,7 +249,7 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
 
         RSACryptoServiceProvider provider1 = new RSACryptoServiceProvider();
 
-        provider1.FromXmlString(Configuration["RsaPrivateKey"]!);
+        provider1.FromXmlString(_client.PrivateKey!);
 
         RsaSecurityKey rsaSecurityKey1 = new RsaSecurityKey(provider1);
         var signinCredentials = new SigningCredentials(rsaSecurityKey1, SecurityAlgorithms.RsaSha256);
@@ -324,6 +325,7 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
 
     public async Task<TokenResponse> GenerateTokenResponse()
     {
+     
         var tokenResponse = new TokenResponse()
         {
             TokenType = "Bearer",

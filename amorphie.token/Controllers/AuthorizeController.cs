@@ -14,6 +14,10 @@ using Microsoft.IdentityModel.Tokens;
 using amorphie.token.Services.Role;
 using System.Collections.ObjectModel;
 using System.Dynamic;
+using System.Web;
+using Dapr.Extensions.Configuration;
+using Google.Protobuf.WellKnownTypes;
+using amorphie.token.core.Dtos;
 
 
 namespace amorphie.token.core.Controllers;
@@ -57,95 +61,87 @@ public class AuthorizeController : Controller
         _collectionUsers = collectionUsers;
     }
 
-    [HttpGet("/private/MigrateCollectionUsers")]
+    [HttpGet("/private/GenerateCollectionClaims")]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<IActionResult> MigrateCollection()
+    public async Task<IActionResult> GenerateCollectionClaims()
     {
+        Dictionary<string,Dictionary<string,string>> response = new();
         try
         {
-            var result = new Dictionary<string,string>();
+            
             var users = _collectionUsers.Users;
-            string password = _configuration["CollectionDefaultPassword"];
-            string salt = _configuration["CollectionPasswordSalt"];
 
+            List<SaveUserClaimDto> claimList = new List<SaveUserClaimDto>();
             foreach(var user in users)
             {
-                if(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT").Equals("Prod"))
+                string lastKey = string.Empty;
+                Dictionary<string,string> claimStatusList = new();
+                try
                 {
-                    password = RandomHelper.RandomPassword();
-                }
-
-                var userRequest = new UserInfo
-                {
-                    firstName = user.Name,
-                    lastName = user.Surname,
-                    phone = new UserPhone{
-                        countryCode = user.Phone.CountryCode,
-                        prefix = user.Phone.Prefix,
-                        number = user.Phone.Number
-                    },
-                    state = "Active",
-                    salt = salt,
-                    password = password,
-                    explanation = "Migrated From Collection",
-                    reason = "Amorphie Collection Login",
-                    isArgonHash = true,
-                    eMail = user.Mail,
-                    reference = user.CitizenshipNo
-                };
-
-                var migrateResult = await _userService.SaveUser(userRequest);
-                if(migrateResult.StatusCode == 200)
-                {
-                    result.Add(user.CitizenshipNo, "Success");
-
-                    var otpRequest = new
+                    var toAdd = await CreateDto(user);
+                    foreach(var item in toAdd)
                     {
-                        Sender = "Burgan",
-                        SmsType = "Fast",
-                        Phone = new
+                        lastKey = item.ClaimName;
+                        using var httpClient = new HttpClient();
+                        var res = await httpClient.PostAsJsonAsync(_configuration["UserBaseAddress"]+"userClaim",item);
+                        if(res.IsSuccessStatusCode)
                         {
-                            CountryCode = user.Phone.CountryCode,
-                            Prefix = user.Phone.Prefix,
-                            Number = user.Phone.Number
-                        },
-                        Content = $"Collection uygulamasına giriş yapmak için şifreniz {password}",
-                        Process = new
-                        {
-                            Name = "CollectionMigration",
-                            Identity = "AmorphieToken"
+                            claimStatusList.Add(lastKey,"success");
                         }
-                    };
-
-                    StringContent request = new(JsonSerializer.Serialize(otpRequest), Encoding.UTF8, "application/json");
-
-                    using var httpClient = new HttpClient();
-                    var httpResponse = await httpClient.PostAsync(_configuration["MessagingGatewayUri"], request);
-
+                        else
+                        {
+                            claimStatusList.Add(lastKey,"failed | " + await res.Content.ReadAsStringAsync());
+                        }
+                    }
                 }
-                else
+                catch (System.Exception ex)
                 {
-                    result.Add(user.CitizenshipNo, "False");
+                    claimStatusList.Add(lastKey,"failed | " + ex.ToString());
                 }
+                response.Add(user.CitizenshipNo, claimStatusList);
             }
 
-            return Ok(result);
+            return Ok(response);
         }
         catch (System.Exception ex)
         {
-            return BadRequest("Migration Failed | " + ex.ToString());
+            return Ok(response);
         }
         
         
     }
 
-    [HttpGet("/ebanking/token/jwks")]
-    [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<IActionResult> Jwks()
+    private async Task<List<SaveUserClaimDto>> CreateDto(core.Models.Collection.User user)
     {
-        var jwks = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(_configuration!["Jwk"]!);
-        return Ok(await Task.FromResult(jwks));
+        var userReponse = await _userService.GetUserByReference(user.CitizenshipNo);
+        List<SaveUserClaimDto> toAdd =
+        [
+            new SaveUserClaimDto{
+                UserId = userReponse.Response.Id.ToString(),
+                ClaimName = "LoginUser",
+                ClaimValue = user.LoginUser
+            },
+            new SaveUserClaimDto{
+                UserId = userReponse.Response.Id.ToString(),
+                ClaimName = "DepartmentCode",
+                ClaimValue = user.DepartmentCode
+            },
+            new SaveUserClaimDto{
+                UserId = userReponse.Response.Id.ToString(),
+                ClaimName = "Role",
+                ClaimValue = user.Role.GetHashCode().ToString()
+            },
+            new SaveUserClaimDto{
+                UserId = userReponse.Response.Id.ToString(),
+                ClaimName = "Client",
+                ClaimValue = "collection"
+            },
+        ];
+
+        return toAdd;
     }
+
+    
     
     [HttpGet("/private/Logout")]
     [ApiExplorerSettings(IgnoreApi = true)]

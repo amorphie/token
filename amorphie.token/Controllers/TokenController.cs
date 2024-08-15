@@ -16,7 +16,6 @@ using System.Security.Claims;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 using System.Security.Cryptography;
 using System.Dynamic;
-using Microsoft.AspNetCore.WebUtilities;
 
 
 
@@ -58,6 +57,22 @@ public class TokenController : Controller
 
     }
 
+    [HttpGet("/ebanking/token/{clientCode}/jwks")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> Jwks(string clientCode)
+    {
+        var clientResponse = await _clientService.CheckClientByCode(clientCode);
+        if(clientResponse.StatusCode != 200)
+        {
+            return StatusCode(404);
+        }
+        var client = clientResponse.Response;
+
+        RsaService rsaService = new();
+        
+        return Ok(await Task.FromResult(rsaService.GetJwks(client!.PublicKey!)));
+    }
+
     [HttpGet(".well-known/{clientCode}/openid-configuration")]
     public async Task<IActionResult> OpenIdConfiguration(string clientCode)
     {
@@ -77,7 +92,7 @@ public class TokenController : Controller
             authorization_endpoint= basepath+"/ebanking/Authorize",
             token_endpoint = basepath+"/ebanking/token",
             userinfo_endpoint = basepath + "/ebanking/token/get-user-info",
-            jwks_uri = basepath + "/ebanking/token/jwks",
+            jwks_uri = basepath + $"/ebanking/token/{clientCode}/jwks",
             response_types_supported = new string[]{"code"},
             scopes_supported = new string[]{"openid","profile"},
             grant_types_supported = client.allowedgranttypes?.Select(g => g.GrantType) ?? [],
@@ -259,7 +274,7 @@ public class TokenController : Controller
         }
 
         RSACryptoServiceProvider provider = new RSACryptoServiceProvider();
-        provider.FromXmlString(_configuration["RsaPublicKey"]!);
+        provider.FromXmlString(client.PublicKey!);
             
         RsaSecurityKey rsaSecurityKey = new RsaSecurityKey(provider);
 
