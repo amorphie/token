@@ -25,6 +25,7 @@ using amorphie.token.Services.Migration;
 using amorphie.token.Services.Profile;
 using amorphie.token.Services.Role;
 using amorphie.token.Services.TransactionHandler;
+using Dapr.Extensions.Configuration;
 using Elastic.Apm.NetCoreAll;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
@@ -57,10 +58,8 @@ internal partial class Program
         }
 
         await builder.Configuration.AddVaultSecrets(builder.Configuration["DAPR_SECRET_STORE_NAME"], ["ServiceConnections","Keys"]);
-
-        // builder.Configuration.AddDaprSecretStore(builder.Configuration["DAPR_SECRET_STORE_NAME"],client, TimeSpan.FromSeconds(15));
+        //builder.Configuration.AddDaprSecretStore(builder.Configuration["DAPR_SECRET_STORE_NAME"],client, TimeSpan.FromSeconds(15));
         // builder.Configuration.AddJsonStream(new MemoryStream(System.Text.Encoding.ASCII.GetBytes(builder.Configuration["Fcm"])));
-        
         builder.Services.AddAntiforgery(x =>
         {
             x.SuppressXFrameOptionsHeader = true;
@@ -128,7 +127,7 @@ internal partial class Program
                     throw new Exception();
                 }
                 var request = httpContext!.Request;
-                if(request.Path.ToString().Equals("/public/Login"))
+                if(request.Path.ToString().Equals("/ebanking/Authorize/login"))
                 {
                     var formData =  request.ReadFormAsync().GetAwaiter().GetResult();
                     var code = formData!["code"];
