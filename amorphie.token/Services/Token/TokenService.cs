@@ -125,8 +125,15 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
             return string.Empty;
         }
 
+        RSACryptoServiceProvider provider1 = new RSACryptoServiceProvider();
+
+        provider1.FromXmlString(_client.PrivateKey!);
+
+        RsaSecurityKey rsaSecurityKey1 = new RsaSecurityKey(provider1);
+        var signinCredentials = new SigningCredentials(rsaSecurityKey1, SecurityAlgorithms.RsaSha256);
+
         var idToken = JwtHelper.GenerateJwt("BurganIam", _client.returnuri, claims,
-        expires: DateTime.UtcNow.AddSeconds(idDuration));
+        expires: DateTime.UtcNow.AddSeconds(idDuration), signingCredentials:signinCredentials);
 
         _tokenInfoDetail!.IdTokenId = Guid.NewGuid();
         _tokenInfoDetail!.TokenList.Add(JwtHelper.CreateTokenInfo(TokenType.IdToken, _tokenInfoDetail.IdTokenId, _client.id!, DateTime.UtcNow.AddSeconds(idDuration), true, _user!.Reference
@@ -310,8 +317,12 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
             return string.Empty;
         }
 
-        var secretKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_client.jwtSalt!));
-        var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha384);
+        RSACryptoServiceProvider provider1 = new RSACryptoServiceProvider();
+
+        provider1.FromXmlString(_client.PrivateKey!);
+
+        RsaSecurityKey rsaSecurityKey1 = new RsaSecurityKey(provider1);
+        var signinCredentials = new SigningCredentials(rsaSecurityKey1, SecurityAlgorithms.RsaSha256);
 
         var refreshExpires = DateTime.UtcNow.AddSeconds(refreshDuration);
         string refresh_token = JwtHelper.GenerateJwt("BurganIam", _client.returnuri, tokenClaims,
@@ -530,9 +541,14 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
             _tokenRequest.GrantType = "client_credentials";
         }
 
-        var secretKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_client.jwtSalt!));
+        RSACryptoServiceProvider provider = new RSACryptoServiceProvider();
+        provider.FromXmlString(_client.PublicKey!);
+            
+        RsaSecurityKey rsaSecurityKey = new RsaSecurityKey(provider);
+
         JwtSecurityToken? refreshTokenValidated;
-        if (JwtHelper.ValidateToken(tokenRequest.RefreshToken!, "BurganIam", _client.returnuri, secretKey, out refreshTokenValidated))
+        
+        if (JwtHelper.ValidateToken(tokenRequest.RefreshToken!, "BurganIam", _client.returnuri, rsaSecurityKey, out refreshTokenValidated))
         {
 
             var tokenResponse = await GenerateTokenResponse();
