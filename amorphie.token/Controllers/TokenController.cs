@@ -532,7 +532,10 @@ public class TokenController : Controller
             }
             else
             {
-                return Results.Problem(detail: token.Detail, statusCode: token.StatusCode);
+                var errorModel = new ErrorModel();
+                errorModel.Error = "invalid_token";
+                errorModel.Description = "The Refresh Token is Invalid";
+                return Results.Json(errorModel, statusCode: 401);
             }
 
             var flowInstanceId = Guid.NewGuid().ToString();
