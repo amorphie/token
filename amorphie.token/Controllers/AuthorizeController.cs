@@ -61,6 +61,14 @@ public class AuthorizeController : Controller
         _collectionUsers = collectionUsers;
     }
 
+    [HttpGet("/private/ReloadUsers")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> ReloadCollection()
+    {
+        await _collectionUsers.ReloadUsers();
+        return Ok();
+    }
+
     [HttpGet("/private/GenerateCollectionClaims")]
     [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<IActionResult> GenerateCollectionClaims()

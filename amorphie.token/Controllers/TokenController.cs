@@ -434,7 +434,10 @@ public class TokenController : Controller
             }
             else
             {
-                return Problem(detail: token.Detail, statusCode: token.StatusCode);
+                var errorModel = new ErrorModel();
+                errorModel.Error = "invalid_token";
+                errorModel.Description = "The Refresh Token is Invalid";
+                return StatusCode(401, errorModel);
             }
 
             dynamic data = new ExpandoObject();

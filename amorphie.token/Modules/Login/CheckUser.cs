@@ -6,6 +6,7 @@ using amorphie.token.Services.InternetBanking;
 using amorphie.token.Services.Migration;
 using amorphie.token.Services.Profile;
 using amorphie.token.Services.TransactionHandler;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -203,7 +204,9 @@ namespace amorphie.token.Modules.Login
                     variables.message = ErrorHelper.GetErrorMessage(LoginErrors.WrongPassword, langCode); 
                     variables.PasswordTryCount = 0;
                     variables.wrongCredentials = true;
+                    return Results.Ok(variables);
                 }
+                
                 var amorphieUser = amorphieUserResult.Response;
                 variables.userSerialized = JsonSerializer.Serialize(amorphieUser);
                 variables.Reference = amorphieUser.Reference;
