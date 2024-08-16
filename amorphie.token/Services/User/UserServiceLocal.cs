@@ -108,7 +108,7 @@ public class UserServiceLocal : IUserService
         }
         else
         {
-            throw new ServiceException((int)Errors.InvalidUser, "User Endpoint Did Not Response Successfully");
+            return new ServiceResponse() { StatusCode = (int)httpResponseMessage.StatusCode, Detail = "User Endpoint Did Not Response Successfully | " +await httpResponseMessage.Content.ReadAsStringAsync()};
         }
     }
 

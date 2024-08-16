@@ -42,7 +42,6 @@ namespace amorphie.token.Services.FlowHandler
 
         public async Task<ServiceResponse> Save(FlowProcess flowProcess)
         {
-            Console.WriteLine("save geldi");
             await _daprClient.SaveStateAsync(Configuration["DAPR_STATE_STORE_NAME"],"Flow_"+flowProcess.Id,flowProcess,metadata: new Dictionary<string, string> { { "ttlInSeconds", "60" } });
             return new ServiceResponse{
                 StatusCode = 200
@@ -57,7 +56,6 @@ namespace amorphie.token.Services.FlowHandler
                 await Task.Delay(50);
                 if(_flowProcess is {})
                 { 
-                    Console.WriteLine("process +-geldi");
                     if(_flowProcess.FlowStatus != FlowStatus.Active)
                         break;
                 }

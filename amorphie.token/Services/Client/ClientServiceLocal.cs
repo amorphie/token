@@ -21,7 +21,7 @@ public class ClientServiceLocal : IClientService
             var client = await httpResponseMessage.Content.ReadFromJsonAsync<ClientResponse>();
             if (client == null)
             {
-                throw new ServiceException((int)Errors.InvalidClient, "Client not found with provided ClientId");
+                return new ServiceResponse<ClientResponse>(){ StatusCode = 404 , Detail = "Client not found with provided ClientId"};
             }
             return new ServiceResponse<ClientResponse>()
             {
@@ -31,7 +31,7 @@ public class ClientServiceLocal : IClientService
         }
         else
         {
-            throw new ServiceException((int)Errors.InvalidClient, "Client Endpoint Did Not Response Successfully");
+            return new ServiceResponse<ClientResponse>(){ StatusCode = (int)httpResponseMessage.StatusCode , Detail = "Client Endpoint Error"};
         }
 
 
@@ -47,7 +47,7 @@ public class ClientServiceLocal : IClientService
             var client = await httpResponseMessage.Content.ReadFromJsonAsync<ClientResponse>();
             if (client == null)
             {
-                throw new ServiceException((int)Errors.InvalidClient, "Client not found with provided ClientId");
+                return new ServiceResponse<ClientResponse>(){ StatusCode = 404 , Detail = "Client not found with provided ClientId"};
             }
             return new ServiceResponse<ClientResponse>()
             {
@@ -57,7 +57,7 @@ public class ClientServiceLocal : IClientService
         }
         else
         {
-            throw new ServiceException((int)Errors.InvalidClient, "Client Endpoint Did Not Response Successfully");
+            return new ServiceResponse<ClientResponse>(){ StatusCode = (int)httpResponseMessage.StatusCode , Detail = "Client Endpoint Error"};
         }
     }
 
@@ -72,7 +72,7 @@ public class ClientServiceLocal : IClientService
             var client = await httpResponseMessage.Content.ReadFromJsonAsync<ClientResponse>();
             if (client == null)
             {
-                throw new ServiceException((int)Errors.InvalidClient, "Client not found with provided ClientId");
+                return new ServiceResponse<ClientResponse>(){ StatusCode = 404 , Detail = "Client not found with provided ClientId"};
             }
             return new ServiceResponse<ClientResponse>()
             {
@@ -82,7 +82,7 @@ public class ClientServiceLocal : IClientService
         }
         else
         {
-            throw new ServiceException((int)Errors.InvalidClient, "Client Endpoint Did Not Response Successfully");
+            return new ServiceResponse<ClientResponse>(){ StatusCode = (int)httpResponseMessage.StatusCode , Detail = "Client Endpoint Error"};
         }
 
 
@@ -98,7 +98,7 @@ public class ClientServiceLocal : IClientService
             var client = await httpResponseMessage.Content.ReadFromJsonAsync<ClientResponse>();
             if (client == null)
             {
-                throw new ServiceException((int)Errors.InvalidClient, "Client not found with provided ClientId");
+                return new ServiceResponse<ClientResponse>(){ StatusCode = 404 , Detail = "Client not found with provided ClientId"};
             }
             return new ServiceResponse<ClientResponse>()
             {
@@ -108,7 +108,7 @@ public class ClientServiceLocal : IClientService
         }
         else
         {
-            throw new ServiceException((int)Errors.InvalidClient, "Client Endpoint Did Not Response Successfully");
+            return new ServiceResponse<ClientResponse>(){ StatusCode = (int)httpResponseMessage.StatusCode , Detail = "Client Endpoint Error"};
         }
     }
 }

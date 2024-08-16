@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Reflection;
 using System.Security.Claims;
+using amorphie.token.core.Dtos;
 using amorphie.token.core.Models.Consent;
 using amorphie.token.core.Models.Profile;
 using amorphie.token.Services.TransactionHandler;
@@ -58,11 +59,12 @@ namespace amorphie.token.Services.ClaimHandler
                     var tagName = claimPath[3];
                     var fieldName = claimPath[4];
 
-                    var tagData = await _tagService.GetTagInfo(domain, entity, tagName, _queryStringForTag!);
-                    if (tagData == null)
+                    var tagDataResponse = await _tagService.GetTagInfo(domain, entity, tagName, _queryStringForTag!);
+                    if (tagDataResponse.StatusCode != 200)
                         return null;
+                    var tagData = tagDataResponse.Response;
 
-                    return tagData[fieldName]?.ToString() ?? null;
+                    return tagData![fieldName]?.ToString() ?? null;
 
                 }
                 catch (Exception ex)
@@ -85,6 +87,21 @@ namespace amorphie.token.Services.ClaimHandler
                     return null;
 
                 return property!.GetValue(_user!)!.ToString()!;
+            }
+
+            if (claimPath.First().Equals("userClaim"))
+            {
+                if (_user == null)
+                    return null;
+
+                var claim = _user.Claims.FirstOrDefault(c => c.ClaimName.ToLower(new CultureInfo("en-US",false)).Equals(claimPath[1].ToLower(new CultureInfo("en-US",false))));
+
+                if(claim is {})
+                {
+                    return claim.ClaimValue;
+                }
+
+                return null;
             }
 
             if (claimPath.First().Equals("openbanking"))
@@ -159,11 +176,12 @@ namespace amorphie.token.Services.ClaimHandler
                     var tagName = claimPath[3];
                     var fieldName = claimPath[4];
 
-                    var tagData = await _tagService.GetTagInfo(domain, entity, tagName, _queryStringForTag!);
-                    if (tagData == null)
+                    var tagDataResponse = await _tagService.GetTagInfo(domain, entity, tagName, _queryStringForTag!);
+                    if (tagDataResponse.StatusCode != 200)
                         return null;
+                    var tagData = tagDataResponse.Response;
 
-                    return tagData[fieldName].ToString();
+                    return tagData![fieldName]?.ToString() ?? null;
 
                 }
                 catch (Exception ex)
@@ -186,6 +204,21 @@ namespace amorphie.token.Services.ClaimHandler
                     return null;
 
                 return property!.GetValue(_user!);
+            }
+
+            if (claimPath.First().Equals("userClaim"))
+            {
+                if (_user == null)
+                    return null;
+
+                var claim = _user.Claims.FirstOrDefault(c => c.ClaimName.ToLower(new CultureInfo("en-US",false)).Equals(claimPath[1].ToLower(new CultureInfo("en-US",false))));
+
+                if(claim is {})
+                {
+                    return claim.ClaimValue;
+                }
+                
+                return null;
             }
 
             if (claimPath.First().Equals("openbanking"))
@@ -245,7 +278,6 @@ namespace amorphie.token.Services.ClaimHandler
 
         private object? GetPropertyValue(object? src, string propName)
         {
-            Console.WriteLine("prop name:"+propName);
             if (src == null) throw new ArgumentException("Value cannot be null.", "src");
             if (propName == null) throw new ArgumentException("Value cannot be null.", "propName");
 
@@ -295,7 +327,7 @@ namespace amorphie.token.Services.ClaimHandler
             {
                 _user = user;
                 _queryStringForTag = string.Empty;
-                _queryStringForTag += "?reference=" + _user!.Reference;
+                _queryStringForTag += "?user_reference=" + _user!.Reference;
                 _queryStringForTag += "&mail=" + _user!.EMail;
                 _queryStringForTag += "&phone=" + _user!.MobilePhone!.ToString();
             }
