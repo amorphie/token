@@ -56,7 +56,7 @@ public class LoginController : Controller
     }
 
     [ApiExplorerSettings(IgnoreApi = true)]
-    [HttpPost("public/Login")]
+    [HttpPost("ebanking/Authorize/login")]
     public async Task<IActionResult> Login(Login loginRequest)
     {
         try

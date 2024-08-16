@@ -7,6 +7,7 @@ using amorphie.token.Services.Profile;
 using amorphie.token.Services.Consent;
 using amorphie.token.core.Models.Profile;
 using System.Text.Json;
+using System.Web;
 
 namespace amorphie.token.Services.Authorization;
 
@@ -108,10 +109,63 @@ public class AuthorizationService : ServiceBase, IAuthorizationService
                 };
             }
 
+            if(string.IsNullOrWhiteSpace(client!.returnuri))
+            {
+                return new ServiceResponse<AuthorizationResponse>()
+                {
+                    StatusCode = 480,
+                    Detail = "Client Redirect Uri is Not Defined"
+                };
+            }
+
+            if(!client!.returnuri!.Equals(HttpUtility.UrlDecode(request.RedirectUri)) && !string.IsNullOrWhiteSpace(request.RedirectUri))
+            {
+                return new ServiceResponse<AuthorizationResponse>()
+                {
+                    StatusCode = 481,
+                    Detail = "Requested Redirect Uri Doesn't Match With Defined on Client"
+                };
+            }
+
+            if(!string.IsNullOrWhiteSpace(client!.pkce))
+            {
+                if(client.pkce.Equals("must"))
+                {
+                    if(string.IsNullOrWhiteSpace(request.CodeChallangeMethod))
+                    {
+                        return new ServiceResponse<AuthorizationResponse>()
+                        {
+                            StatusCode = 482,
+                            Detail = "code_challange_method Parameter is Mandatory"
+                        };
+                    }
+                    
+                    if(!TokenConstants.SupportedPkceAlgs.Contains(request.CodeChallangeMethod))
+                    {
+                        return new ServiceResponse<AuthorizationResponse>()
+                        {
+                            StatusCode = 483,
+                            Detail = $"code_challange_method has to be set as one of following ({String.Join(",",TokenConstants.SupportedPkceAlgs)})"
+                        };
+                    }
+
+                    if(string.IsNullOrWhiteSpace(request.CodeChallange))
+                    {
+                        return new ServiceResponse<AuthorizationResponse>()
+                        {
+                            StatusCode = 484,
+                            Detail = "code_challange Parameter is Mandatory"
+                        };
+                    }
+                    
+                }
+
+            }
+
             var authCode = new AuthorizationCode
             {
                 ClientId = client.id,
-                RedirectUri = request.RedirectUri,
+                RedirectUri = client.returnuri,
                 RequestedScopes = requestedScopes,
                 CodeChallenge = request.CodeChallange,
                 CodeChallengeMethod = request.CodeChallangeMethod,

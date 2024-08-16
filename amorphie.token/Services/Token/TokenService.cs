@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using amorphie.token.core.Dtos;
 using amorphie.token.core.Models.Consent;
 using amorphie.token.core.Models.InternetBanking;
 using amorphie.token.core.Models.Profile;
@@ -246,8 +247,12 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
             await _daprClient.SaveStateAsync(Configuration["DAPR_STATE_STORE_NAME"], $"{_tokenInfoDetail!.AccessTokenId.ToString()}_privateClaims", dictFromPrivateClaims, metadata: new Dictionary<string, string> { { "ttlInSeconds", (_tokenInfoDetail.AccessTokenDuration+60).ToString() } });
         }
 
-        var secretKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_client.jwtSalt!));
-        var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha384);
+        RSACryptoServiceProvider provider1 = new RSACryptoServiceProvider();
+
+        provider1.FromXmlString(_client.PrivateKey!);
+
+        RsaSecurityKey rsaSecurityKey1 = new RsaSecurityKey(provider1);
+        var signinCredentials = new SigningCredentials(rsaSecurityKey1, SecurityAlgorithms.RsaSha256);
 
         var expires = DateTime.UtcNow.AddSeconds(accessDuration);
 
@@ -320,6 +325,7 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
 
     public async Task<TokenResponse> GenerateTokenResponse()
     {
+     
         var tokenResponse = new TokenResponse()
         {
             TokenType = "Bearer",
@@ -1159,22 +1165,43 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
         _tokenRequest = tokenRequest;
         ServiceResponse<ClientResponse> clientResponse;
 
-        if(Guid.TryParse(tokenRequest.ClientId, out Guid _))
+        if(!string.IsNullOrWhiteSpace(tokenRequest.ClientSecret))
         {
-            clientResponse = await _clientService.ValidateClient(tokenRequest.ClientId!, tokenRequest.ClientSecret!);
+            if(Guid.TryParse(tokenRequest.ClientId, out Guid _))
+            {
+                clientResponse = await _clientService.ValidateClient(tokenRequest.ClientId!, tokenRequest.ClientSecret!);
+            }
+            else
+            {
+                clientResponse = await _clientService.ValidateClientByCode(tokenRequest.ClientId!, tokenRequest.ClientSecret!);
+            }
+            if (clientResponse.StatusCode != 200)
+            {
+                return new ServiceResponse<TokenResponse>()
+                {
+                    StatusCode = clientResponse.StatusCode,
+                    Detail = clientResponse.Detail
+                };
+            }
         }
         else
         {
-            clientResponse = await _clientService.ValidateClientByCode(tokenRequest.ClientId!, tokenRequest.ClientSecret!);
-        }
-        
-        if (clientResponse.StatusCode != 200)
-        {
-            return new ServiceResponse<TokenResponse>()
+            if(Guid.TryParse(tokenRequest.ClientId, out Guid _))
             {
-                StatusCode = clientResponse.StatusCode,
-                Detail = clientResponse.Detail
-            };
+                clientResponse = await _clientService.CheckClient(tokenRequest.ClientId!);
+            }
+            else
+            {
+                clientResponse = await _clientService.CheckClientByCode(tokenRequest.ClientId!);
+            }
+            if (clientResponse.StatusCode != 200)
+            {
+                return new ServiceResponse<TokenResponse>()
+                {
+                    StatusCode = clientResponse.StatusCode,
+                    Detail = clientResponse.Detail
+                };
+            }
         }
 
         _client = clientResponse.Response;

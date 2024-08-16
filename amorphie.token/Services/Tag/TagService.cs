@@ -15,22 +15,21 @@ public class TagService : ServiceBase,ITagService
     {
         _daprClient = daprClient;
     }
-    public async Task<Dictionary<string,dynamic>> GetTagInfo(string domain, string entity, string tagName, string queryString)
+    public async Task<ServiceResponse<Dictionary<string,dynamic>>> GetTagInfo(string domain, string entity, string tagName, string queryString)
     {
         try
         {
             var tagData = await _daprClient.InvokeMethodAsync<Dictionary<string,dynamic>>(HttpMethod.Get,Configuration["TagExecutionServiceAppName"],$"tag/{domain}/{entity}/{tagName}/execute/{queryString}");
-            Logger.LogInformation("Tag Data Path :"+$"tag/{domain}/{entity}/{tagName}/execute/{queryString}");
-            Logger.LogInformation("Tag Data Serialized :"+JsonSerializer.Serialize(tagData));
-            return tagData;
+
+            return new ServiceResponse<Dictionary<string,dynamic>> { StatusCode = 200, Response = tagData};
         }
         catch(InvocationException ex)
         {
-            Logger.LogError("Dapr Service Invocation Failed | Detail:"+ex.Message);
+            return new ServiceResponse<Dictionary<string,dynamic>> { StatusCode = (int)ex.Response.StatusCode, Detail = ex.ToString()};
         }
         catch (System.Exception ex)
         {
-            Logger.LogError("An Error Occured When Getting Tag Data | Detail:"+ex.Message);
+            return new ServiceResponse<Dictionary<string,dynamic>> { StatusCode = 500, Detail = ex.ToString()};
         }
         return null;
     }
