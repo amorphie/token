@@ -5,13 +5,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>3aebe289-5ab8-42bd-a7dc-1f9ce0d48e11</UserSecretsId>
-    <ThreadPoolMinThreads>10</ThreadPoolMinThreads>
     <!--<NoWarn>CS8602;CS8601;CS8618;CS8620</NoWarn>-->
     <NoWarn>CS8618</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="amorphie.core" Version="1.1.31" />
+    <PackageReference Include="amorphie.core" Version="1.1.32" />
     <PackageReference Include="amorphie.core.security" Version="1.0.0" />
     <PackageReference Include="Dapr.AspNetCore" Version="1.13.0" />
     <PackageReference Include="Dapr.Client" Version="1.13.0" />

@@ -435,8 +435,9 @@ public class TokenController : Controller
             else
             {
                 var errorModel = new ErrorModel();
-                errorModel.Error = "invalid_token";
-                errorModel.Description = "The Refresh Token is Invalid";
+                errorModel.ErrorCode = 401;
+                errorModel.ErrorType = "invalid_token";
+                errorModel.Error = "The Refresh Token is Invalid";
                 return StatusCode(401, errorModel);
             }
 
@@ -533,8 +534,9 @@ public class TokenController : Controller
             else
             {
                 var errorModel = new ErrorModel();
-                errorModel.Error = "invalid_token";
-                errorModel.Description = "The Refresh Token is Invalid";
+                errorModel.ErrorCode = 401;
+                errorModel.ErrorType = "invalid_token";
+                errorModel.Error = "The Refresh Token is Invalid";
                 return Results.Json(errorModel, statusCode: 401);
             }
 
