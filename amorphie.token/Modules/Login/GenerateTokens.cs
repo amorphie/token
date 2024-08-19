@@ -122,20 +122,33 @@ namespace amorphie.token.Modules.Login
 
                 
 
-                dataChanged.additionalData = result.Response;
+                
 
                 if(isSubflow)
                 {
                     try
                     {
                         var redirect_params = body.GetProperty("LoginRequest").GetProperty("redirect_params");
-                        dataChanged.additionalData.redirect_params = redirect_params;
+                        dataChanged.additionalData = new{
+                            access_token = result.Response!.AccessToken,
+                            expires_in = result.Response!.ExpiresIn,
+                            id_token = result.Response!.IdToken,
+                            refresh_token = result.Response!.RefreshToken,
+                            refresh_token_expires_in = result.Response!.RefreshTokenExpiresIn,
+                            token_type = result.Response!.TokenType,
+                            scope = result.Response!.scope,
+                            redirect_params
+                        };
                     }
                     catch (Exception)
                     {
                         
                     }
                     
+                }
+                else
+                {
+                    dataChanged.additionalData = result.Response;
                 }
                 
                 targetObject.Data = dataChanged;
