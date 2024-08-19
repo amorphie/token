@@ -1455,6 +1455,28 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
         _transactionService.Client = client;
         _refreshTokenInfo = refreshTokenInfo;
 
+        var consentListResponse = await _roleService!.GetConsents(_client!.id!, _user.Reference);
+        if(consentListResponse.StatusCode == 200)
+        {
+            var consentList = consentListResponse.Response;
+
+            var selectedConsent = consentList!.FirstOrDefault();
+            _selectedConsent = selectedConsent;
+
+            var roleResponse = await _roleService.GetRole(selectedConsent!.RoleId);
+            if(roleResponse.StatusCode == 200)
+            {
+                var amorphieRole = roleResponse.Response;
+                _role = amorphieRole;
+                var roleDefinition = await _roleService.GetRoleDefinition(_role!.DefinitionId);
+                if(roleDefinition.StatusCode == 200)
+                {
+                    _roleDefinition = roleDefinition.Response;
+                }
+            }
+            
+        }
+
         _tokenRequest = new GenerateTokenRequest{
              GrantType = "refresh_token"
         };
