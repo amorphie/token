@@ -25,6 +25,8 @@ namespace amorphie.token.Modules.Login
         {
             var transitionName = body.GetProperty("LastTransition").ToString();
 
+            bool isSubflow = body.GetProperty("IsSubFlow");
+
             var dataBody = body.GetProperty($"TRX-{transitionName}").GetProperty("Data");
 
             dynamic dataChanged = Newtonsoft.Json.JsonConvert.DeserializeObject<ExpandoObject>(dataBody.ToString());
@@ -118,14 +120,31 @@ namespace amorphie.token.Modules.Login
                     });
                 }
 
+                
 
                 dataChanged.additionalData = result.Response;
+
+                if(isSubflow)
+                {
+                    try
+                    {
+                        var redirect_params = body.GetProperty("LoginRequest").GetProperty("redirect_params");
+                        dataChanged.additionalData.redirect_params = redirect_params;
+                    }
+                    catch (Exception)
+                    {
+                        
+                    }
+                    
+                }
+                
                 targetObject.Data = dataChanged;
                 targetObject.TriggeredBy = Guid.Parse(body.GetProperty($"TRX-{transitionName}").GetProperty("TriggeredBy").ToString());
                 targetObject.TriggeredByBehalfOf = Guid.Parse(body.GetProperty($"TRX-{transitionName}").GetProperty("TriggeredByBehalfOf").ToString());
                 dynamic variables = new Dictionary<string, dynamic>();
                 variables.Add("status", true);
                 variables.Add($"TRX{transitionName.ToString().Replace("-", "")}", targetObject);
+                
                 transactionService.Logon.LogonStatus = LogonStatus.Completed;
                 return Results.Ok(variables);
             }
