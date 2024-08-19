@@ -60,7 +60,7 @@ internal partial class Program
             }
         }
         
-        await builder.Configuration.AddVaultSecrets(builder.Configuration["DAPR_SECRET_STORE_NAME"], ["ServiceConnections","Keys"]);
+        await builder.Configuration.AddVaultSecrets(builder.Configuration["DAPR_SECRET_STORE_NAME"], ["ServiceConnections"]);
         //builder.Configuration.AddDaprSecretStore(builder.Configuration["DAPR_SECRET_STORE_NAME"],client, TimeSpan.FromSeconds(15));
         // builder.Configuration.AddJsonStream(new MemoryStream(System.Text.Encoding.ASCII.GetBytes(builder.Configuration["Fcm"])));
         builder.Services.AddAntiforgery(x =>

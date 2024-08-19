@@ -61,6 +61,18 @@ public class AuthorizeController : Controller
         _collectionUsers = collectionUsers;
     }
 
+    [HttpPost("/wf/message/{messageName}")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> WfMessage(string messageName,[FromBody] dynamic body)
+    {
+        dynamic data = new ExpandoObject();
+        data.messageName = messageName;
+        data.variables = new ExpandoObject();
+        data.variables = body;
+        await _daprClient.InvokeBindingAsync("token-zeebe-command","publish-message",data);
+        return Ok();
+    }
+    
     [HttpGet("/private/ReloadUsers")]
     [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<IActionResult> ReloadCollection()
