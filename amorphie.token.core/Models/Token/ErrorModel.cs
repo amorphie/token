@@ -8,9 +8,11 @@ namespace amorphie.token.core.Models.Token
 {
     public class ErrorModel
     {
+        [JsonPropertyName("errorCode")]
+        public int ErrorCode{get;set;}
+        [JsonPropertyName("errorType")]
+        public string? ErrorType{get;set;}
         [JsonPropertyName("error")]
         public string? Error{get;set;}
-        [JsonPropertyName("error_description")]
-        public string? Description{get;set;}
     }
 }
