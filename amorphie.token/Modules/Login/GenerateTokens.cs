@@ -25,7 +25,7 @@ namespace amorphie.token.Modules.Login
         {
             var transitionName = body.GetProperty("LastTransition").ToString();
 
-            bool isSubflow = body.GetProperty("IsSubFlow");
+            bool isSubflow = Convert.ToBoolean(body.GetProperty("IsSubFlow").ToString());
 
             var dataBody = body.GetProperty($"TRX-{transitionName}").GetProperty("Data");
 

@@ -22,7 +22,7 @@ namespace amorphie.token.Modules.Login
         {
             var transitionName = body.GetProperty("LastTransition").ToString();
             
-            bool isSubflow = body.GetProperty("IsSubFlow");
+            bool isSubflow = Convert.ToBoolean(body.GetProperty("IsSubFlow").ToString());
             
             var requestBodySerialized = body.GetProperty("TRX-" + transitionName).GetProperty("Data").GetProperty(WorkflowConstants.ENTITY_DATA_FIELD).ToString();
             TokenRequest request = JsonSerializer.Deserialize<TokenRequest>(requestBodySerialized);
