@@ -162,18 +162,6 @@ public class AuthorizeController : Controller
     }
 
     
-    
-    [HttpGet("/private/Logout")]
-    [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<IActionResult> Logout([FromQuery] string token)
-    {
-        
-
-        return Ok();
-
-    }
-
-    
     [HttpPost("/post-transition/{recordId}/{transition}")]
     [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<IActionResult> PostTransition([FromRoute] string recordId, [FromRoute] string transition, [FromBody] dynamic body)
@@ -362,12 +350,12 @@ public class AuthorizeController : Controller
                 User = user
             });
             var authCode = authResponse.Response!.Code;
-            return StatusCode(201,new{
+            return Content(JsonSerializer.Serialize(new{
                     yetkilendirmeKodu = Guid.NewGuid().ToString(),
                     yetKod = authCode,
                     rizaNo = consentId,
-                    rizaDrm =  "Y"
-            });
+                    rizaDrm =  "Y"}),"application/json"
+            );
         }
         return Forbid();
     }
