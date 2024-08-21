@@ -320,6 +320,16 @@ public class AuthorizeController : Controller
     [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<IActionResult> OpenBankingGenerateAuthCode([FromQuery(Name = "rizaNo")] Guid consentId, [FromQuery(Name = "rizaTip")] string consentType)
     {
+        var requestUri = Request.Headers.FirstOrDefault(h => h.Key.ToLowerInvariant().Equals("request_uri"));
+        var requestPath = "/ohvps/gkd/s1.1/yetkilendirme-kodu";
+        var requestTime = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:sszzz");
+        var responseId = Guid.NewGuid();
+
+        dynamic errObj = new ExpandoObject();
+        errObj.path = requestPath;
+        errObj.timestamp = requestTime;
+        errObj.id = responseId;
+
         var consentResponse = await _consentService.GetConsent(consentId);
         
         if (consentResponse.StatusCode == 200)
@@ -330,6 +340,19 @@ public class AuthorizeController : Controller
             if(consent!.state!.Equals("K"))
             {
                 return BadRequest();
+            }
+
+            if(consent.stateModifiedAt?.AddSeconds(300) < DateTime.UtcNow)
+            {
+                errObj.httpCode = 404;
+                errObj.httpMessage = "Not Found";
+                errObj.errorCode = "TR.OHVPS.Resource.NotFound";
+                errObj.moreInformation = "Resource Not Found";
+                errObj.moreInformationTr = "Kaynak bulunamadı.";
+               
+                SignatureHelper.SetXJwsSignatureHeader(HttpContext, _configuration, errObj);
+
+                return StatusCode(404,errObj);
             }
 
             string kmlkNo = consent.userTCKN!;

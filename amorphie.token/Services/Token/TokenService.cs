@@ -54,9 +54,10 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
     private core.Models.Collection.User? _collectionUser;
     private TokenInfo? _refreshTokenInfo;
     private string? _deviceId;
-
+    
+    private DateTime _currentDate = DateTime.Now; 
     public string DeviceId { set => _deviceId = value;}
-
+    
     private async Task PersistTokenInfo()
     {
         await WriteToDb();
@@ -177,8 +178,8 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
                 if(_consent.consentType!.Equals("OB_Account"))
                 {
                     DateTime lastAccessDate = DateTime.Parse(consentData!.hspBlg.iznBlg.erisimIzniSonTrh.ToString());
-                    var DateDiffAsHours = Convert.ToInt32((lastAccessDate.AddMilliseconds(-1) - DateTime.Now).TotalHours);
-                    accessDuration = DateDiffAsHours > 30 * 24 ? (30 * 24 * 60 * 60) : (DateDiffAsHours * 60 * 60); 
+                    var DateDiffAsSeconds = Convert.ToInt32((lastAccessDate.AddMilliseconds(-1) - _currentDate).TotalSeconds);
+                    accessDuration = DateDiffAsSeconds > 30 * 24 * 60 * 60 ? (30 * 24 * 60 * 60) : DateDiffAsSeconds; 
                 }
                 if(_consent.consentType.Equals("OB_Payment"))
                 {
@@ -302,8 +303,8 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
                 if(_consent.consentType!.Equals("OB_Account"))
                 {
                     DateTime lastAccessDate = DateTime.Parse(consentData!.hspBlg.iznBlg.erisimIzniSonTrh.ToString());
-                    var DateDiffAsHours = Convert.ToInt32((lastAccessDate.AddMilliseconds(-1) - DateTime.Now).TotalHours);
-                    refreshDuration = DateDiffAsHours * 60 * 60; 
+                    var DateDiffAsSeconds = Convert.ToInt32((lastAccessDate.AddMilliseconds(-1) - _currentDate).TotalSeconds);
+                    refreshDuration = DateDiffAsSeconds; 
                 }
         
                 if(_consent.consentType.Equals("OB_Payment"))
