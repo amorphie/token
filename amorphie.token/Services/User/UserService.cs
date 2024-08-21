@@ -741,4 +741,56 @@ public class UserService : ServiceBase, IUserService
             };
         }
     }
+
+    public async Task<ServiceResponse<ActiveDeviceDto>> CheckDevice(string reference, string clientId)
+    {
+        try
+        {
+            var response = await _daprClient.InvokeMethodAsync<ActiveDeviceDto>(HttpMethod.Get, Configuration["UserServiceAppName"], $"/public/device/{clientId}/{reference}");
+            return new ServiceResponse<ActiveDeviceDto>()
+            {
+                StatusCode = 200,
+                Detail = "",
+                Response = response
+            };
+        }
+        catch (InvocationException ex)
+        {
+
+            if ((int)ex.Response.StatusCode >= 400 && (int)ex.Response.StatusCode < 500)
+            {
+                if ((int)ex.Response.StatusCode == 404)
+                {
+                    return new ServiceResponse<ActiveDeviceDto>()
+                    {
+                        StatusCode = 404,
+                        Detail = "User Device Not Found"
+                    };
+                }
+                return new ServiceResponse<ActiveDeviceDto>()
+                {
+                    StatusCode = (int)ex.Response.StatusCode,
+                    Detail = "User Device Not Found"
+                };
+            }
+            else
+            {
+                Logger.LogError("An Error Occured At User Device Invocation | Detail:" + ex.ToString());
+                return new ServiceResponse<ActiveDeviceDto>()
+                {
+                    StatusCode = 500,
+                    Detail = "Server Error"
+                };
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Logger.LogError("An Error Occured At User Device Invocation | Detail:" + ex.ToString());
+        }
+        return new ServiceResponse<ActiveDeviceDto>()
+        {
+            StatusCode = 500,
+            Detail = "Server Error"
+        };
+    }
 }

@@ -62,14 +62,14 @@ public class UserServiceLocal : IUserService
             var user = await httpResponseMessage.Content.ReadFromJsonAsync<LoginResponse>();
             if (user == null)
             {
-                throw new ServiceException((int)Errors.InvalidUser, "User not found with provided info");
+                return new ServiceResponse<LoginResponse>() { StatusCode = 404  };
             }
 
             return new ServiceResponse<LoginResponse>() { StatusCode = 200, Response = user };
         }
         else
         {
-            throw new ServiceException((int)Errors.InvalidUser, "User Endpoint Did Not Response Successfully");
+            return new ServiceResponse<LoginResponse>() { StatusCode = (int)httpResponseMessage.StatusCode  };
         }
     }
 
@@ -108,7 +108,7 @@ public class UserServiceLocal : IUserService
         }
         else
         {
-            throw new ServiceException((int)Errors.InvalidUser, "User Endpoint Did Not Response Successfully");
+            return new ServiceResponse() { StatusCode = (int)httpResponseMessage.StatusCode, Detail = "User Endpoint Did Not Response Successfully | " +await httpResponseMessage.Content.ReadAsStringAsync()};
         }
     }
 
@@ -368,6 +368,23 @@ public class UserServiceLocal : IUserService
         else
         {
             throw new ServiceException(500, "User Endpoint Did Not Response Successfully");
+        }
+    }
+
+    public async Task<ServiceResponse<ActiveDeviceDto>> CheckDevice(string reference, string clientId)
+    {
+        var httpClient = _httpClientFactory.CreateClient("User");
+        var httpResponseMessage = await httpClient.GetAsync($"public/device/{clientId}/{reference}");
+
+        if (httpResponseMessage.IsSuccessStatusCode)
+        {
+            var raw = await httpResponseMessage.Content.ReadAsStringAsync();
+            var device = JsonSerializer.Deserialize<ActiveDeviceDto>(raw,new JsonSerializerOptions{PropertyNameCaseInsensitive = true});
+            return new ServiceResponse<ActiveDeviceDto>() { StatusCode = 200, Response = device };
+        }
+        else
+        {
+            return new ServiceResponse<ActiveDeviceDto>() { StatusCode = 404, Detail = "Device Not Found" };
         }
     }
 }

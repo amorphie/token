@@ -37,4 +37,6 @@ public class ClientResponse
     public string? jwtSalt { get; set; }
     public bool CanCreateLoginUrl{get;set;} = default!;
     public string[]? CreateLoginUrlClients { get; set; } = default!;
+    public string? PrivateKey{get;set;}
+    public string? PublicKey{get;set;}
 }

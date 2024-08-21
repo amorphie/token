@@ -360,3 +360,6 @@ amorphie.token/wwwroot/assets/.DS_Store
 */.DS_Store
 
 .DS_Store
+
+privateKey.xml
+publicKey.xml

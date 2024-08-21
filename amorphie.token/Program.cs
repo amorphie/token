@@ -1,13 +1,14 @@
-using System.Text;
-using System.Text.Json;
+
 using amorphie.core.Extension;
+using amorphie.core.Middleware.Logging;
 using amorphie.token;
 using amorphie.token.core;
-using amorphie.token.core.Models.Profile;
 using amorphie.token.data;
 using amorphie.token.Middlewares;
 using amorphie.token.Modules.Login;
 using amorphie.token.Modules.OtpProcess;
+using amorphie.token.Modules.ThirdFactor;
+using amorphie.token.Modules.TokenFlow;
 using amorphie.token.Services.Card;
 using amorphie.token.Services.Cardion;
 using amorphie.token.Services.ClaimHandler;
@@ -22,8 +23,10 @@ using amorphie.token.Services.Profile;
 using amorphie.token.Services.Role;
 using amorphie.token.Services.TransactionHandler;
 using Elastic.Apm.NetCoreAll;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
+using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json.Linq;
 using Refit;
 using Serilog;
 using Serilog.Formatting.Compact;
@@ -33,10 +36,12 @@ internal partial class Program
    
     private static async Task Main(string[] args)
     {
+        ThreadPool.SetMinThreads(50,50);
+
         var builder = WebApplication.CreateBuilder(args);
         builder.Configuration.AddEnvironmentVariables();
         var client = new DaprClientBuilder().Build();
-        using (var tokenSource = new CancellationTokenSource(20000))
+        using (var tokenSource = new CancellationTokenSource(5000))
         {
             try
             {
@@ -47,12 +52,11 @@ internal partial class Program
                 Console.WriteLine("Dapr Sidecar Doesn't Respond " + ex.ToString());
                 return;
             }
-
         }
-
-
-        await builder.Configuration.AddVaultSecrets(builder.Configuration["DAPR_SECRET_STORE_NAME"], new string[] { "ServiceConnections" });
-
+        
+        await builder.Configuration.AddVaultSecrets(builder.Configuration["DAPR_SECRET_STORE_NAME"], ["ServiceConnections"]);
+        //builder.Configuration.AddDaprSecretStore(builder.Configuration["DAPR_SECRET_STORE_NAME"],client, TimeSpan.FromSeconds(15));
+        // builder.Configuration.AddJsonStream(new MemoryStream(System.Text.Encoding.ASCII.GetBytes(builder.Configuration["Fcm"])));
         builder.Services.AddAntiforgery(x =>
         {
             x.SuppressXFrameOptionsHeader = true;
@@ -78,16 +82,31 @@ internal partial class Program
                 .WriteTo.File(new CompactJsonFormatter(), "amorphie-token-log.json", rollingInterval: RollingInterval.Day)
                 .ReadFrom.Configuration(builder.Configuration)
                 .CreateLogger();
-        builder.Host.UseSerilog(Log.Logger, true);
+        builder.AddSeriLog<AmorphieLogEnricher>();
 
         builder.Services.AddHealthChecks();
         builder.Services.AddControllersWithViews();
         builder.Services.AddDaprClient();
         builder.Services.AddHttpContextAccessor();
-        builder.Services.AddDistributedMemoryCache();
+        builder.Services.AddDataProtection()
+        .SetApplicationName("AmorphieToken")
+        .UseCryptographicAlgorithms(
+        new AuthenticatedEncryptorConfiguration
+        {
+            EncryptionAlgorithm = EncryptionAlgorithm.AES_256_CBC,
+            ValidationAlgorithm = ValidationAlgorithm.HMACSHA256
+        })
+        .PersistKeysToDbContext<DatabaseContext>();
+        builder.Services.AddStackExchangeRedisCache(options => {
+            options.Configuration = builder.Configuration["RedisConnection"];
+            options.InstanceName = "TokenRedisInstance";
+        });
+
         builder.Services.AddSession(opt =>
         {
             opt.Cookie.Name = ".amorphie.token";
+            opt.Cookie.Domain = ".burgan.com.tr";
+            opt.Cookie.MaxAge = TimeSpan.FromSeconds(300);
         });
 
         builder.Services.AddEndpointsApiExplorer();
@@ -105,7 +124,7 @@ internal partial class Program
                     throw new Exception();
                 }
                 var request = httpContext!.Request;
-                if(request.Path.ToString().Equals("/public/Login"))
+                if(request.Path.ToString().Equals("/ebanking/Authorize/login"))
                 {
                     var formData =  request.ReadFormAsync().GetAwaiter().GetResult();
                     var code = formData!["code"];
@@ -224,8 +243,7 @@ internal partial class Program
         builder.Services.AddScoped<ILoginService, LoginService>();
         builder.Services.AddScoped<ILegacySSOService, LegacySSOService>();
 
-
-
+        builder.Services.AddSingleton<CollectionUsers>();
 
 
         builder.Services.AddRefitClient<IProfile>()
@@ -268,6 +286,11 @@ internal partial class Program
         .Bind(builder.Configuration.GetSection("CardValidation"));
 
         var app = builder.Build();
+        app.Use((context, next) =>
+        {
+            context.Request.EnableBuffering();
+            return next();
+        });
         app.UseAllElasticApm(app.Configuration);
 
         app.UseTransactionMiddleware();
@@ -286,6 +309,8 @@ internal partial class Program
 
         app.MapLoginWorkflowEndpoints();
         app.MapOtpProcessWorkflowEndpoints();
+        app.MapThirdFactorWorkflowEndpoints();
+        app.MapTokenFlowEndpoints();
 
         // Configure the HTTP request pipeline.
         if (!app.Environment.IsDevelopment())

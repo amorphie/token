@@ -11,12 +11,17 @@ using amorphie.token.Services.Login;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using Microsoft.IdentityModel.Tokens;
-using System.Runtime.CompilerServices;
+using amorphie.token.Services.Role;
+using System.Collections.ObjectModel;
 using System.Dynamic;
+using System.Web;
+using Dapr.Extensions.Configuration;
+using Google.Protobuf.WellKnownTypes;
+using amorphie.token.core.Dtos;
 
 
 namespace amorphie.token.core.Controllers;
- 
+
 public class AuthorizeController : Controller
 {
     private readonly ILogger<AuthorizeController> _logger;
@@ -32,9 +37,12 @@ public class AuthorizeController : Controller
     private readonly IConsentService _consentService;
     private readonly IProfileService _profileService;
     private readonly ILoginService _loginService;
+    private readonly IRoleService _roleService;
+    private readonly CollectionUsers _collectionUsers;
+    
     public AuthorizeController(ILogger<AuthorizeController> logger, IAuthorizationService authorizationService, IUserService userService, DatabaseContext databaseContext
     , IConfiguration configuration, DaprClient daprClient, IClientService clientService, IInternetBankingUserService ibUserService, ITransactionService transactionService,
-    IFlowHandler flowHandler, IConsentService consentService, IProfileService profileService, ILoginService loginService)
+    IFlowHandler flowHandler, CollectionUsers collectionUsers, IRoleService roleService, IConsentService consentService, IProfileService profileService, ILoginService loginService)
     {
         _logger = logger;
         _authorizationService = authorizationService;
@@ -49,6 +57,195 @@ public class AuthorizeController : Controller
         _consentService = consentService;
         _profileService = profileService;
         _loginService = loginService;
+        _roleService = roleService;
+        _collectionUsers = collectionUsers;
+    }
+
+    [HttpPost("/wf/message/{messageName}")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> WfMessage(string messageName,[FromBody] dynamic body)
+    {
+        dynamic data = new ExpandoObject();
+        data.messageName = messageName;
+        data.variables = new ExpandoObject();
+        data.variables = body;
+        await _daprClient.InvokeBindingAsync("token-zeebe-command","publish-message",data);
+        return Ok();
+    }
+    
+    [HttpGet("/private/ReloadUsers")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> ReloadCollection()
+    {
+        await _collectionUsers.ReloadUsers();
+        return Ok();
+    }
+
+    [HttpGet("/private/GenerateCollectionClaims")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> GenerateCollectionClaims()
+    {
+        Dictionary<string,Dictionary<string,string>> response = new();
+        try
+        {
+            
+            var users = _collectionUsers.Users;
+
+            List<SaveUserClaimDto> claimList = new List<SaveUserClaimDto>();
+            foreach(var user in users)
+            {
+                string lastKey = string.Empty;
+                Dictionary<string,string> claimStatusList = new();
+                try
+                {
+                    var toAdd = await CreateDto(user);
+                    foreach(var item in toAdd)
+                    {
+                        lastKey = item.ClaimName;
+                        using var httpClient = new HttpClient();
+                        var res = await httpClient.PostAsJsonAsync(_configuration["UserBaseAddress"]+"userClaim",item);
+                        if(res.IsSuccessStatusCode)
+                        {
+                            claimStatusList.Add(lastKey,"success");
+                        }
+                        else
+                        {
+                            claimStatusList.Add(lastKey,"failed | " + await res.Content.ReadAsStringAsync());
+                        }
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    claimStatusList.Add(lastKey,"failed | " + ex.ToString());
+                }
+                response.Add(user.CitizenshipNo, claimStatusList);
+            }
+
+            return Ok(response);
+        }
+        catch (System.Exception ex)
+        {
+            return Ok(response);
+        }
+        
+        
+    }
+
+    private async Task<List<SaveUserClaimDto>> CreateDto(core.Models.Collection.User user)
+    {
+        var userReponse = await _userService.GetUserByReference(user.CitizenshipNo);
+        List<SaveUserClaimDto> toAdd =
+        [
+            new SaveUserClaimDto{
+                UserId = userReponse.Response.Id.ToString(),
+                ClaimName = "LoginUser",
+                ClaimValue = user.LoginUser
+            },
+            new SaveUserClaimDto{
+                UserId = userReponse.Response.Id.ToString(),
+                ClaimName = "DepartmentCode",
+                ClaimValue = user.DepartmentCode
+            },
+            new SaveUserClaimDto{
+                UserId = userReponse.Response.Id.ToString(),
+                ClaimName = "Role",
+                ClaimValue = user.Role.GetHashCode().ToString()
+            },
+            new SaveUserClaimDto{
+                UserId = userReponse.Response.Id.ToString(),
+                ClaimName = "Client",
+                ClaimValue = "collection"
+            },
+        ];
+
+        return toAdd;
+    }
+
+    
+    [HttpPost("/post-transition/{recordId}/{transition}")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> PostTransition([FromRoute] string recordId, [FromRoute] string transition, [FromBody] dynamic body)
+    {
+        using var httpClient = new HttpClient();
+        var content1 = new StringContent(JsonSerializer.Serialize(new{
+            grant_type = "client_credentials",
+            client_id = "IbAndroidApp",
+            client_secret = "",
+            scopes = new string[] { "openId","retail-customer"}
+        }),Encoding.UTF8,"application/json");
+        var resp2 = await httpClient.PostAsync("https://test-pubagw6.burgan.com.tr/ebanking/token",content1);
+        var res1 = await resp2.Content.ReadAsStringAsync();
+        
+        var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(res1);
+
+        var FlowUserInfo = JsonSerializer.Deserialize<FlowUserInfo>(HttpContext.Session.GetString("FlowUserInfo"));
+
+        var content = new StringContent(JsonSerializer.Serialize(body),Encoding.UTF8,"application/json");
+        httpClient.DefaultRequestHeaders.Add("Authorization","Bearer "+tokenResponse.AccessToken);
+        httpClient.DefaultRequestHeaders.Add("User",Guid.NewGuid().ToString());
+        httpClient.DefaultRequestHeaders.Add("Behalf-Of-User",Guid.NewGuid().ToString());
+        httpClient.DefaultRequestHeaders.Add("xdeviceid",FlowUserInfo.deviceId);
+        httpClient.DefaultRequestHeaders.Add("xtokenid",FlowUserInfo.tokenId);
+        httpClient.DefaultRequestHeaders.Add("xdeployment","ANDROID");
+        httpClient.DefaultRequestHeaders.Add("xdeviceinfo","SAMSUNG");
+        var resp = await httpClient.PostAsync($"https://test-amorphie-workflow.burgan.com.tr/workflow/instance/{recordId}/transition/{transition}",content);
+        var res = await resp.Content.ReadAsStringAsync();
+
+        return Ok();
+    }
+
+    [HttpPost("/get-page")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> GetPage([FromBody] dynamic body)
+    {
+        var page_id = body.GetProperty("page_id").ToString();
+        if(page_id == "AMORPHIE_LOGIN_PAGE")
+        {
+            return View("InnerLoginPage",new Login());
+        }
+        if(page_id == "OTP")
+        {
+            return View("Otp",new Otp());
+        }
+        return StatusCode(403);
+    }
+
+
+    [HttpGet("/public/flow/demo")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> FlowDemo()
+    {
+        ViewBag.deviceId = Guid.NewGuid().ToString();
+        ViewBag.tokenId = Guid.NewGuid().ToString();
+        ViewBag.requestId = Guid.NewGuid().ToString();
+
+        HttpContext.Session.SetString("FlowUserInfo",JsonSerializer.Serialize(new FlowUserInfo(){
+            deviceId = ViewBag.deviceId,
+            tokenId = ViewBag.tokenId
+        }));
+
+        using var httpClient = new HttpClient();
+        var content = new StringContent(JsonSerializer.Serialize(new{
+            grant_type = "client_credentials",
+            client_id = "IbAndroidApp",
+            client_secret = "",
+            scopes = new string[] { "openId","retail-customer"}
+        }),Encoding.UTF8,"application/json");
+        var resp = await httpClient.PostAsync("https://test-pubagw6.burgan.com.tr/ebanking/token",content);
+        var res = await resp.Content.ReadAsStringAsync();
+        
+        var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(res);
+        ViewBag.accessToken = tokenResponse!.AccessToken;
+
+        return View("LoginFlowPage");
+    }
+
+    [HttpGet("/public/getAuthorize")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> GetAuthorize()
+    {
+        await Task.CompletedTask;
+        return Redirect("http://localhost:4900/public/Authorize?response_type=code&client_id=IbAndroidApp&state=test&scope=profile&redirect_uri=tt");
     }
 
     [HttpPost("/public/get-user-info")]
@@ -87,7 +284,7 @@ public class AuthorizeController : Controller
 
     [HttpGet("/public/GenerateAuthCode")]
     [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<IActionResult> GenerateAuthCodeForTestingPurpose([FromQuery(Name = "Reference")] string reference)
+    public async Task<IActionResult> GenerateAuthCodeForTestingPurpose([FromQuery(Name = "Reference")] string reference, [FromQuery(Name = "Client")] string client)
     {
         if(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")!.Equals("Test") || 
         Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")!.Equals("Development") ||
@@ -101,7 +298,7 @@ public class AuthorizeController : Controller
             using var sha256 = SHA256.Create();
             var hashedCodeVerifier = Base64UrlEncoder.Encode(sha256.ComputeHash(codeVerifierAsByte));
             var authCodeResponse = await _authorizationService.Authorize(new AuthorizationServiceRequest{
-                ClientId = "IbAndroidApp",
+                ClientId = client,
                 CodeChallange = hashedCodeVerifier,
                 CodeChallangeMethod = "SHA256",
                 Nonce = "test",
@@ -129,15 +326,13 @@ public class AuthorizeController : Controller
         {
             var consent = consentResponse!.Response!;
             var consentData = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(consent!.additionalData!);
-            string kmlkNo = string.Empty;
-            if (consent.consentType!.Equals("OB_Account"))
+
+            if(consent!.state!.Equals("K"))
             {
-                kmlkNo = consentData!.kmlk.kmlkVrs.ToString();
+                return BadRequest();
             }
-            if (consent.consentType!.Equals("OB_Payment"))
-            {
-                kmlkNo = consentData!.odmBsltm.kmlk.kmlkVrs.ToString();
-            }
+
+            string kmlkNo = consent.userTCKN!;
             var userResponse = await _userService.GetUserByReference(kmlkNo);
             if(userResponse.StatusCode != 200)
             {
@@ -145,7 +340,6 @@ public class AuthorizeController : Controller
                 //Error Handle
             }
             var user = userResponse.Response;
-            var redirectUri = consentData!.gkd.yonAdr;
 
             var authResponse = await _authorizationService.Authorize(new AuthorizationServiceRequest()
             {
@@ -156,13 +350,12 @@ public class AuthorizeController : Controller
                 User = user
             });
             var authCode = authResponse.Response!.Code;
-            return StatusCode(201,new{
-                yetkilendirmeKodu = new{
+            return Content(JsonSerializer.Serialize(new{
+                    yetkilendirmeKodu = Guid.NewGuid().ToString(),
                     yetKod = authCode,
                     rizaNo = consentId,
-                    rizaDrm =  "Y"
-                }
-            });
+                    rizaDrm =  "Y"}),"application/json"
+            );
         }
         return Forbid();
     }
@@ -236,10 +429,30 @@ public class AuthorizeController : Controller
 
         var user = await _userService.GetUserByReference(createPreLoginRequest.scopeUser);
 
-        HttpContext.Session.SetString("LoggedUser", JsonSerializer.Serialize(user.Response));
-        // var session = Request.Cookies[".amorphie.token"];
-        // HttpContext.Response.Cookies.Append(".amorphie.token",session!);
-        return Redirect(targetClient!.loginurl!);
+        var preLoginGuid = Guid.NewGuid().ToString();
+        var preLoginId = "Prelogin_"+preLoginGuid;
+        var preLoginInfo = new PreLoginInfo
+        {
+            User = user.Response,
+            Client = targetClient
+        };
+
+        await _daprClient.SaveStateAsync(_configuration["DAPR_STATE_STORE_NAME"], preLoginId, preLoginInfo, metadata: new Dictionary<string, string> { { "ttlInSeconds", "20" } });
+        
+        return Ok(new{redirectUri = _configuration["PreLoginConsumeEndPoint"]+preLoginGuid});
+    }
+
+    [HttpGet("public/ConsumePreLogin/{id}")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> ConsumePreLogin([FromRoute] string id)
+    {
+        var preLoginInfo = await _daprClient.GetStateAsync<PreLoginInfo>(_configuration["DAPR_STATE_STORE_NAME"], "Prelogin_"+id);
+        if(preLoginInfo is not {})
+            return StatusCode(403);
+        
+        HttpContext.Session.SetString("LoggedUser", JsonSerializer.Serialize(preLoginInfo.User));
+
+        return Redirect(preLoginInfo.Client.loginurl!);
     }
 
     [HttpPost("public/DodgeCreatePreLogin")]
@@ -313,24 +526,9 @@ public class AuthorizeController : Controller
         {
             var integrationUserProperty = userInfoModel!.GetProperty("integration_user_name");
             username = integrationUserProperty.ToString();
-            var user = core.Constants.CollectionUsers.Users.FirstOrDefault(u => u.LoginUser.Equals(username.Split("\\")[1]));
-            var userRequest = new UserInfo
-            {
-                firstName = user.Name,
-                lastName = user.Surname,
-                phone = null,
-                state = "Active",
-                salt = "Collection",
-                password = "123456",
-                explanation = "Migrated From Collection",
-                reason = "Amorphie Collection Login",
-                isArgonHash = true,
-                eMail = string.Empty,
-                reference = user.CitizenshipNo
-            };
-
-            var migrateResult = await _userService.SaveUser(userRequest);
-            var amorphieUserResult = await _userService.Login(new LoginRequest() { Reference = userRequest.reference!, Password = userRequest.password! });
+            
+            var collectionUser = _collectionUsers.Users.FirstOrDefault(u => u.LoginUser.Equals(username.Split("\\")[1]));
+            var amorphieUserResult = await _userService.GetUserByReference(collectionUser.CitizenshipNo);
             var amorphieUser = amorphieUserResult.Response;
             authResponse = await _authorizationService.Authorize(new AuthorizationServiceRequest
             {
@@ -349,7 +547,7 @@ public class AuthorizeController : Controller
                 return Results.Problem(detail:authResponse.Detail,statusCode:authResponse.StatusCode);
             }
 
-            var authCodeInfo = await _authorizationService.AssignCollectionUserToAuthorizationCode(amorphieUser!, authResponse.Response!.Code!,user);
+            var authCodeInfo = await _authorizationService.AssignCollectionUserToAuthorizationCode(amorphieUser!, authResponse.Response!.Code!,collectionUser);
 
         }
 
@@ -360,6 +558,11 @@ public class AuthorizeController : Controller
     [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<IActionResult> OpenBankingAuthorize(OpenBankingAuthorizationRequest authorizationRequest)
     {
+        var loginModel = new OpenBankingLogin
+        {
+            consentId = authorizationRequest.riza_no
+        };
+
         var consentResult = await _consentService.GetConsent(authorizationRequest.riza_no);
         if (consentResult.StatusCode != 200)
         {
@@ -368,24 +571,23 @@ public class AuthorizeController : Controller
         }
         var consent = consentResult.Response;
 
+        if(consent!.state!.Equals("I") || consent!.state!.Equals("K") || consent!.state!.Equals("S"))
+        {
+            ViewBag.hasError = true;
+            ViewBag.errorMessage = "Geçersiz Rıza";
+            return View("NewLogin", loginModel);
+        }
+
+        if(!consent!.state!.Equals("B"))
+        {
+            await _consentService.CancelConsent(authorizationRequest.riza_no,"07");
+            ViewBag.hasError = true;
+            ViewBag.errorMessage = "Geçersiz Rıza";
+            return View("NewLogin", loginModel);
+        }
+
         var consentData = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(consent!.additionalData!);
-        string kmlkNo = string.Empty;
-        if (consent.consentType.Equals("OB_Account"))
-        {
-            kmlkNo = consentData!.kmlk.kmlkVrs.ToString();
-        }
-        if (consent.consentType.Equals("OB_Payment"))
-        {
-            try
-            {
-                kmlkNo = consentData!.odmBsltm.kmlk.kmlkVrs.ToString();
-            }
-            catch (Exception ex)
-            {
-                kmlkNo = "";
-            }
-            
-        }
+        string kmlkNo = consent.userTCKN!;
 
         if(!string.IsNullOrWhiteSpace(kmlkNo))
         {
@@ -412,11 +614,6 @@ public class AuthorizeController : Controller
         {
             ViewBag.hasError = false;
         }
-
-        var loginModel = new OpenBankingLogin
-        {
-            consentId = authorizationRequest.riza_no
-        };
         
         // if (customerInfo!.data!.profile!.businessLine == "X")
         // {
@@ -434,6 +631,30 @@ public class AuthorizeController : Controller
     [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<IActionResult> Authorize(AuthorizationRequest authorizationRequest)
     {
+        // ViewBag.deviceId = Guid.NewGuid().ToString();
+        // ViewBag.tokenId = Guid.NewGuid().ToString();
+        // ViewBag.requestId = Guid.NewGuid().ToString();
+        // ViewBag.body = JsonSerializer.Serialize(authorizationRequest);
+        // HttpContext.Session.SetString("FlowUserInfo",JsonSerializer.Serialize(new FlowUserInfo(){
+        //     deviceId = ViewBag.deviceId,
+        //     tokenId = ViewBag.tokenId
+        // }));
+
+        // using var httpClient = new HttpClient();
+        // var content = new StringContent(JsonSerializer.Serialize(new{
+        //     grant_type = "client_credentials",
+        //     client_id = "IbAndroidApp",
+        //     client_secret = "",
+        //     scopes = new string[] { "openId","retail-customer"}
+        // }),Encoding.UTF8,"application/json");
+        // var resp = await httpClient.PostAsync("https://test-pubagw6.burgan.com.tr/ebanking/token",content);
+        // var res = await resp.Content.ReadAsStringAsync();
+        
+        // var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(res);
+        // ViewBag.accessToken = tokenResponse!.AccessToken;
+
+        // return View("LoginFlowPage");
+
         var authorize = await _authorizationService.Authorize(new AuthorizationServiceRequest
         {
             ClientId = authorizationRequest.ClientId,
@@ -442,6 +663,12 @@ public class AuthorizeController : Controller
             Scope = authorizationRequest.Scope,
             State = authorizationRequest.State
         });
+
+        if(authorize.StatusCode != 200)
+        {
+            var errorModel = authorize.GetErrorDetail();
+            return Problem(detail:errorModel.Detail, statusCode: errorModel.StatusCode);
+        }
 
         var loggedUserSerialized = HttpContext.Session.GetString("LoggedUser");
         if(string.IsNullOrWhiteSpace(loggedUserSerialized))
@@ -465,13 +692,14 @@ public class AuthorizeController : Controller
     {
         await Task.CompletedTask;
         
-        return Ok(core.Constants.CollectionUsers.Users);
+        return Ok(_collectionUsers.Users);
     }
 
     [HttpGet("public/AuthorizeCollection")]
     [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<IActionResult> AuthorizeCollection(AuthorizationRequest authorizationRequest)
     {
+        ViewBag.HasError = false;
         var authorize = await _authorizationService.Authorize(new AuthorizationServiceRequest
         {
             ClientId = authorizationRequest.ClientId,

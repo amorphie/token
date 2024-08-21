@@ -61,8 +61,8 @@ namespace amorphie.token.Services.Profile
                 apiResponse.data.profile.uppercase_surname = apiResponse.data.profile.surname;
                 apiResponse.data.profile.currentMail = apiResponse?.data?.emails?.FirstOrDefault(m => m.type.Equals("personal"))?.address ?? "";
                 apiResponse.data.profile.currentPhone = apiResponse?.data?.phones?.FirstOrDefault(p => p.type.Equals("mobile"))?.ToString() ?? "";
-                apiResponse.data.profile.name = apiResponse?.data?.profile?.name?.ConvertTitleCase();
-                apiResponse.data.profile.surname = apiResponse.data.profile.surname?.ConvertTitleCase();
+                apiResponse.data.profile.name = apiResponse?.data?.profile?.name?.Trim().ConvertTitleCase();
+                apiResponse.data.profile.surname = apiResponse.data.profile.surname?.Trim().ConvertTitleCase();
 
                 result.Response = apiResponse;
                 result.StatusCode = 200;

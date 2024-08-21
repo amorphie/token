@@ -37,11 +37,11 @@ public static class EkycPrepare
         bool hasWfId = false;
         // WFID -- or zeen
         if (constCallType == EkycCallTypeConstants.Mevduat_ON ||
-         callType == EkycCallTypeConstants.Mevduat_HEPSIBURADA || 
+         callType == EkycCallTypeConstants.Mevduat_HEPSIBURADA ||
         callType == EkycCallTypeConstants.Mevduat_BRGN)
         {
-           
-            if(!wfId.IsNullOrEmpty())
+
+            if (!wfId.IsNullOrEmpty())
             {
                 hasWfId = true;
             }
@@ -50,7 +50,7 @@ public static class EkycPrepare
             isSelfServiceAvaible = false;
 
         }
-       
+
 
         if (!hasWfId)
         {
@@ -93,8 +93,8 @@ public static class EkycPrepare
         var nfcMaxCount = Convert.ToInt32(configuration["EkycNfcFailMaxTryCountDefault"]);
         var faceMaxCount = Convert.ToInt32(configuration["EkycFaceFailMaxTryCountDefault"]);
 
-        if (constCallType == EkycCallTypeConstants.Mevduat_ON || 
-        constCallType == EkycCallTypeConstants.Mevduat_BRGN || 
+        if (constCallType == EkycCallTypeConstants.Mevduat_ON ||
+        constCallType == EkycCallTypeConstants.Mevduat_BRGN ||
         callType == EkycCallTypeConstants.Mevduat_HEPSIBURADA)
         {
             ocrMinCount = Convert.ToInt32(configuration["EkycOcrFailMinTryCountMevduat"]);
@@ -126,35 +126,21 @@ public static class EkycPrepare
         // dataChanged.additionalData.customerSurname = registerResult.Surname;
         dataChanged.additionalData.instanceId = instance;
         dataChanged.additionalData.applicantFullName = ApplicantFullName;
+        dataChanged.additionalData.isMediaServerActive = false;
+        dataChanged.additionalData.ekycEnvironment = "preprod";
+
+        if (constCallType == EkycCallTypeConstants.IBSifre_BRGN || callType == EkycCallTypeConstants.IBSifre_ON)
+        {
+            dataChanged.additionalData.isAutoClosable = true;
+        }
+        else
+        {
+            dataChanged.additionalData.isAutoClosable = false;
+        }
+
+
         dataChanged.additionalData.pages = new List<EkycPageModel>{
-            new EkycPageModel
-            {
-                type="waiting",
-                image="wait",
-                title="Kimlik Okuma Adımları Yükleniyor",
-                navText = "Müşterimiz Ol",
-                popUp= new EkycPopUpModel{
-                    image="alert",
-                    title = "Görüntülü Görüşmeyi Sonlandırmak İstediğinize Emin Misiniz?",
-                    subTexts = new List<string>{"Görüntülü görüşme işleminiz sonlandırılacaktır, onaylıyor musunuz?"},
-                    buttons = new List<EkycButtonModel>{
-                        new EkycButtonModel{
-                            type="primary",
-                            itemNo=1,
-                            text = "Onayla",
-                            action="exit",
-                            transition = "amorphie-ekyc-exit"
-                        },
-                        new EkycButtonModel{
-                            type="secondary",
-                            itemNo=2,
-                            text="Görüntülü Görüşmeye Devam Et",
-                            action="cancel"
-                        }
-                    }
-                },
-                buttons = new List<EkycButtonModel>()
-            }
+            EkycAdditionalDataContstants.EkycPrepare
         };
 
         dataChanged.additionalData.exitTransition = "amorphie-ekyc-exit";

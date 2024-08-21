@@ -1,154 +1,55 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using amorphie.token.core.Models.Collection;
 using amorphie.token.core.Models.User;
+using Dapr.Client;
+using Microsoft.Extensions.Configuration;
 
 namespace amorphie.token.core.Constants
 {
     public class CollectionUsers
     {
-        public static readonly IEnumerable<User> Users = new List<User>()
+        private DaprClient _daprClient;
+        private IConfiguration _configuration;
+        private List<User> _users;
+        public List<User> Users {get => _users ?? new List<User>();}
+        public CollectionUsers(IConfiguration configuration, DaprClient daprClient)
         {
-            {new User{
-                Name = "HASAN KAĞAN",
-                Surname = "BAYRAM",
-                CitizenshipNo = "61363026298",
-                LoginUser = "U06385",
-                Role = Role.Agent
-            }},
-            {new User{
-                Name = "ATILAY",
-                Surname = "KARAKABAK",
-                CitizenshipNo = "32867085234",
-                LoginUser = "U04263",
-                Role = Role.Manager
-            }},
-            {new User{
-                Name = "AYSUN",
-                Surname = "DUMAN İLASLAN",
-                CitizenshipNo = "36122202930",
-                LoginUser = "U04935",
-                Role = Role.TeamLeader
-            }},
-            {new User{
-                Name = "BELMA",
-                Surname = "GÖREN",
-                CitizenshipNo = "18419774078",
-                LoginUser = "U04806",
-                Role = Role.Admin
-            }},
-            {new User{
-                Name = "BURCU",
-                Surname = "ETİ",
-                CitizenshipNo = "30583790128",
-                LoginUser = "U06231",
-                Role = Role.Agent
-            }},
-            {new User{
-                Name = "EDA",
-                Surname = "GÖVLER",
-                CitizenshipNo = "28996918338",
-                LoginUser = "U05062",
-                Role = Role.Agent
-            }},
-            {new User{
-                Name = "GÜL",
-                Surname = "ALPAY",
-                CitizenshipNo = "23356670642",
-                LoginUser = "U05444",
-                Role = Role.Admin
-            }},
-            {new User{
-                Name = "GÜLÇİN",
-                Surname = "GÜL",
-                CitizenshipNo = "68692219452",
-                LoginUser = "U05203",
-                Role = Role.Agent
-            }},
-            {new User{
-                Name = "İDRİS",
-                Surname = "SANCAK",
-                CitizenshipNo = "52309628454",
-                LoginUser = "U05600",
-                Role = Role.Admin
-            }},
-            {new User{
-                Name = "MERT",
-                Surname = "DEMİRARSLAN",
-                CitizenshipNo = "14095028054",
-                LoginUser = "U05489",
-                Role = Role.Admin
-            }},
-            {new User{
-                Name = "ÖZGÜR",
-                Surname = "TEKİNER",
-                CitizenshipNo = "47101408106",
-                LoginUser = "U04777",
-                Role = Role.Manager
-            }},
-            {new User{
-                Name = "SELDA",
-                Surname = "IŞIK",
-                CitizenshipNo = "39886225092",
-                LoginUser = "U05036",
-                Role = Role.Agent
-            }},
-            {new User{
-                Name = "SELİM",
-                Surname = "KABA",
-                CitizenshipNo = "36652755920",
-                LoginUser = "U04972",
-                Role = Role.Agent
-            }},
-            {new User{
-                Name = "SEVGİ",
-                Surname = "KAVAK ÖZNERSES",
-                CitizenshipNo = "50941025310",
-                LoginUser = "U04811",
-                Role = Role.TeamLeader
-            }},
-            {new User{
-                Name = "TUBA",
-                Surname = "ŞENTÜRK",
-                CitizenshipNo = "68071040882",
-                LoginUser = "U04645",
-                Role = Role.Manager
+            _configuration = configuration;
+            _daprClient = daprClient;
+
+            try
+            {
+                _users = JsonSerializer.Deserialize<List<User>>(configuration["CollectionUsers"]);
             }
-            },
-            {new User{
-                Name = "TUĞBA",
-                Surname = "IŞIK",
-                CitizenshipNo = "13045514586",
-                LoginUser = "U04273",
-                Role = Role.TeamLeader
+            catch (Exception)
+            {
+                
+                _users = null;
             }
-            },
-            {new User{
-                Name = "UMUT",
-                Surname = "İŞ",
-                CitizenshipNo = "42190908766",
-                LoginUser = "U06007",
-                Role = Role.Agent
+            
+        }
+
+        public async Task ReloadUsers()
+        {
+            try
+            {
+                var secrets = await _daprClient.GetSecretAsync(_configuration["DAPR_SECRET_STORE_NAME"], "ServiceConnections");
+                var usersJson = secrets.FirstOrDefault(s => s.Key.Equals("CollectionUsers"));
+                if(usersJson is {})
+                {
+                    _users = JsonSerializer.Deserialize<List<User>>(usersJson.Value)!;
+                }
             }
-            },
-            {new User{
-                Name = "VEDAT",
-                Surname = "YÜKSEL",
-                CitizenshipNo = "50494498036",
-                LoginUser = "U05179",
-                Role = Role.Agent
+            catch (Exception)
+            {
+                
             }
-            },
-            {new User{
-                Name = "YASEMİN",
-                Surname = "SÜSLÜ",
-                CitizenshipNo = "11216422302",
-                LoginUser = "U05013",
-                Role = Role.Agent
-            }
-            }
-        };
+        }
     }
 }

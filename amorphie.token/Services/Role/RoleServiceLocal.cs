@@ -38,12 +38,34 @@ namespace amorphie.token.Services.Role
             }
         }
 
-        public async Task<ServiceResponse<RoleDefinitionDto>> GetRoleDefinition(Guid roleId)
+        public async Task<ServiceResponse<RoleDto>> GetRole(Guid roleId)
         {
             var httpClient = _httpClientFactory.CreateClient("Role");
 
             var httpResponseMessage = await httpClient.GetAsync(
                 $"/role/{roleId}");
+
+            if (httpResponseMessage.IsSuccessStatusCode)
+            {
+                var roleResponse = await httpResponseMessage.Content.ReadFromJsonAsync<RoleDto>();
+                if (roleResponse == null)
+                {
+                    return new ServiceResponse<RoleDto>() { StatusCode = 404, Response = roleResponse };
+                }
+                return new ServiceResponse<RoleDto>() { StatusCode = 200, Response = roleResponse };
+            }
+            else
+            {
+                return new ServiceResponse<RoleDto>() { StatusCode = (int)httpResponseMessage.StatusCode };
+            }
+        }
+
+        public async Task<ServiceResponse<RoleDefinitionDto>> GetRoleDefinition(Guid roleId)
+        {
+            var httpClient = _httpClientFactory.CreateClient("Role");
+
+            var httpResponseMessage = await httpClient.GetAsync(
+                $"/roleDefinition/{roleId}");
 
             if (httpResponseMessage.IsSuccessStatusCode)
             {

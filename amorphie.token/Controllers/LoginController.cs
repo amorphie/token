@@ -33,9 +33,10 @@ public class LoginController : Controller
     private readonly IProfileService _profileService;
     private readonly IbDatabaseContext _ibContext;
     private readonly IInternetBankingUserService _internetBankingUserService;
+    private readonly CollectionUsers _collectionUsers;
     public LoginController(ILogger<TokenController> logger, IAuthorizationService authorizationService, IUserService userService, DatabaseContext databaseContext
     , IConfiguration configuration,IInternetBankingUserService internetBankingUserService, DaprClient daprClient, IClientService clientService, IInternetBankingUserService ibUserService, ITransactionService transactionService,
-    IFlowHandler flowHandler, IConsentService consentService, IProfileService profileService, IbDatabaseContext ibContext)
+    IFlowHandler flowHandler, CollectionUsers collectionUsers, IConsentService consentService, IProfileService profileService, IbDatabaseContext ibContext)
     {
         _logger = logger;
         _authorizationService = authorizationService;
@@ -51,10 +52,11 @@ public class LoginController : Controller
         _profileService = profileService;
         _ibContext = ibContext;
         _internetBankingUserService = internetBankingUserService;
+        _collectionUsers = collectionUsers;
     }
 
     [ApiExplorerSettings(IgnoreApi = true)]
-    [HttpPost("public/Login")]
+    [HttpPost("ebanking/Authorize/login")]
     public async Task<IActionResult> Login(Login loginRequest)
     {
         try
@@ -154,10 +156,11 @@ public class LoginController : Controller
     {
         try
         {
+            ViewBag.HasError = false;
             if (string.IsNullOrWhiteSpace(loginRequest.UserName) || string.IsNullOrWhiteSpace(loginRequest.Password))
             {
                 ViewBag.HasError = true;
-                ViewBag.ErrorDetail = "Reference and Password Can Not Be Empty";
+                ViewBag.ErrorDetail = "Kimlik numarası ve şifre boş olamaz";
                 var loginModel = new Login()
                 {
                     Code = loginRequest.Code,
@@ -167,55 +170,27 @@ public class LoginController : Controller
                 return View("CollectionLoginPage", loginModel);
             }
 
-            var user = CollectionUsers.Users.FirstOrDefault(u => u.CitizenshipNo.Equals(loginRequest.UserName));
-            if(user is not {})
+            var amorphieUserResult = await _userService.Login(new LoginRequest() { Reference = loginRequest.UserName!, Password = loginRequest.Password! });
+                
+            if(amorphieUserResult.StatusCode != 200)
             {
                 ViewBag.HasError = true;
-                ViewBag.ErrorDetail = "User Not Found";
+                ViewBag.ErrorDetail = "Hatalı şifre";
                 var loginModel = new Login()
                 {
                     Code = loginRequest.Code,
                     RedirectUri = loginRequest.RedirectUri,
                     RequestedScopes = loginRequest.RequestedScopes
                 };
-                return View("CollectionLoginPage", loginModel);
+                
+                return View("/Views/Authorize/CollectionLoginPage.cshtml",loginModel);
             }
             else
             {
-                if(!loginRequest.Password.Equals("123456"))
-                {
-                    ViewBag.HasError = true;
-                    ViewBag.ErrorDetail = "Şifre Hatalı";
-                    var loginModel = new Login()
-                    {
-                        Code = loginRequest.Code,
-                        RedirectUri = loginRequest.RedirectUri,
-                        RequestedScopes = loginRequest.RequestedScopes
-                    };
-                    return View("CollectionLoginPage", loginModel);
-                }
-
-                var userRequest = new UserInfo
-                {
-                    firstName = user.Name,
-                    lastName = user.Surname,
-                    phone = null,
-                    state = "Active",
-                    salt = "Collection",
-                    password = "123456",
-                    explanation = "Migrated From Collection",
-                    reason = "Amorphie Collection Login",
-                    isArgonHash = true,
-                    eMail = string.Empty,
-                    reference = user.CitizenshipNo
-                };
-
-                var migrateResult = await _userService.SaveUser(userRequest);
-                var amorphieUserResult = await _userService.Login(new LoginRequest() { Reference = loginRequest.UserName!, Password = loginRequest.Password! });
                 var amorphieUser = amorphieUserResult.Response;
-                HttpContext.Session.SetString("LoggedUser", JsonSerializer.Serialize(user));
-
-                var authCodeInfo = await _authorizationService.AssignCollectionUserToAuthorizationCode(amorphieUser!, loginRequest.Code!,user);
+                HttpContext.Session.SetString("LoggedUser", JsonSerializer.Serialize(amorphieUser));
+                var collectionUser = _collectionUsers.Users.FirstOrDefault(u => u.CitizenshipNo.Equals(loginRequest.UserName));
+                var authCodeInfo = await _authorizationService.AssignCollectionUserToAuthorizationCode(amorphieUser!, loginRequest.Code!,collectionUser);
                 
                 return Redirect($"{authCodeInfo.RedirectUri}?code={loginRequest.Code}&response_type=code&state={authCodeInfo.State}");
            
@@ -262,10 +237,26 @@ public class LoginController : Controller
             var consentResponse = await _consentService.GetConsent(openBankingLoginRequest.consentId);
             if(consentResponse.StatusCode != 200)
             {
-                //TODO
-                return StatusCode(500);
+                await _consentService.CancelConsent(openBankingLoginRequest.consentId,"99");
+                return RedirectToAction("OpenBankingAuthorize","Authorize",new
+                {
+                    riza_no=openBankingLoginRequest.consentId,
+                    error_message = Convert.ToBase64String(Encoding.UTF8.GetBytes("Beklenmeyen bir hata oluştu."))
+                });
             }
             var consent = consentResponse.Response;
+            if(!string.IsNullOrWhiteSpace(consent!.userTCKN))
+            {
+                if(!consent!.userTCKN!.Equals(openBankingLoginRequest.username))
+                {
+                    await _consentService.CancelConsent(openBankingLoginRequest.consentId, "08");
+                    return RedirectToAction("OpenBankingAuthorize","Authorize",new
+                    {
+                        riza_no=openBankingLoginRequest.consentId,
+                        error_message = Convert.ToBase64String(Encoding.UTF8.GetBytes("Giriş yapmak isteyen kullanıcı ile rıza sahibi kullanıcı aynı olmalıdır."))
+                    });
+                }
+            }
             var consentData = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(consent!.additionalData!);
             var ohkTur = string.Empty;
             if (consent.consentType.Equals("OB_Account"))
@@ -286,10 +277,10 @@ public class LoginController : Controller
             }
             if(ohkTur.Equals("K"))
             {
-                var checkAuthorize = await _consentService.CheckAuthorizeForInstutitionConsent(openBankingLoginRequest.consentId, openBankingLoginRequest.username);
+                var checkAuthorize = await _consentService.CheckAuthorizeForInstitutionConsent(openBankingLoginRequest.consentId, openBankingLoginRequest.username);
                 if(checkAuthorize.StatusCode != 200)
                 {
-                    //TODO
+                    //await _consentService.CancelConsent(openBankingLoginRequest.consentId,"10");
                     return RedirectToAction("OpenBankingAuthorize","Authorize",new
                     {
                         riza_no=openBankingLoginRequest.consentId,
@@ -335,26 +326,80 @@ public class LoginController : Controller
                 return StatusCode(500);
             }
 
+            var userStatus = await _ibContext.Status.Where(s => s.UserId == userResponse.Response!.Id && (!s.State.HasValue || s.State.Value == 10)).OrderByDescending(s => s.CreatedAt).FirstOrDefaultAsync();
+            if (userStatus?.Type != 20)
+            {
+                await _consentService.CancelConsent(openBankingLoginRequest.consentId,"12");
+                return RedirectToAction("OpenBankingAuthorize","Authorize",new
+                {
+                    riza_no=openBankingLoginRequest.consentId,
+                    error_message = Convert.ToBase64String(Encoding.UTF8.GetBytes("Giriş yapmak için yetkiniz yoktur."))
+                });
+            }
+
             var userInfo = userInfoResult.Response;
             
             if (userInfo!.data!.profile!.Equals("customer") || !userInfo!.data!.profile!.status!.Equals("active"))
             {
-                //TODO
-                return StatusCode(500);
+                await _consentService.CancelConsent(openBankingLoginRequest.consentId,"12");
+                return RedirectToAction("OpenBankingAuthorize","Authorize",new
+                {
+                    riza_no=openBankingLoginRequest.consentId,
+                    error_message = Convert.ToBase64String(Encoding.UTF8.GetBytes("Giriş yapmak için yetkiniz yoktur."))
+                });
             }
 
             var mobilePhoneCount = userInfo!.data!.phones!.Count(p => p.type!.Equals("mobile"));
             if (mobilePhoneCount != 1)
             {
-                //TODO
-                return StatusCode(500);
+                await _consentService.CancelConsent(openBankingLoginRequest.consentId,"99");
+                return RedirectToAction("OpenBankingAuthorize","Authorize",new
+                {
+                    riza_no=openBankingLoginRequest.consentId,
+                    error_message = Convert.ToBase64String(Encoding.UTF8.GetBytes("Beklenmeyen bir hata oluştu."))
+                });
             }
 
             var mobilePhone = userInfo!.data!.phones!.FirstOrDefault(p => p.type!.Equals("mobile"));
             if (string.IsNullOrWhiteSpace(mobilePhone!.prefix) || string.IsNullOrWhiteSpace(mobilePhone!.number))
             {
-                //TODO
-                return StatusCode(500);
+                await _consentService.CancelConsent(openBankingLoginRequest.consentId,"99");
+                return RedirectToAction("OpenBankingAuthorize","Authorize",new
+                {
+                    riza_no=openBankingLoginRequest.consentId,
+                    error_message = Convert.ToBase64String(Encoding.UTF8.GetBytes("Beklenmeyen bir hata oluştu."))
+                });
+            }
+
+            int roleKey = 0;
+            var dodgeUserResponse = await _internetBankingUserService.GetUser(openBankingLoginRequest.username!);
+            if (dodgeUserResponse.StatusCode != 200)
+            {
+                roleKey = 20;
+            }
+            else
+            {
+                var dodgeUser = dodgeUserResponse.Response;
+
+                var role = await _ibContext.Role.Where(r => r.UserId.Equals(dodgeUser!.Id) && r.Channel.Equals(10) && r.Status.Equals(10)).OrderByDescending(r => r.CreatedAt).FirstOrDefaultAsync();
+                if(role is {} && (role.ExpireDate ?? DateTime.MaxValue) > DateTime.Now)
+                {
+                    var roleDefinition = await _ibContext.RoleDefinition.FirstOrDefaultAsync(d => d.Id.Equals(role.DefinitionId) && d.IsActive);
+                    if(roleDefinition is {})
+                    {
+                        roleKey = roleDefinition.Key;
+                    }
+                }
+            }
+
+            if(roleKey != 10)
+            {
+                await _consentService.CancelConsent(openBankingLoginRequest.consentId,"11");
+                return RedirectToAction("OpenBankingAuthorize","Authorize",new
+                {
+                    riza_no=openBankingLoginRequest.consentId,
+                    error_message = Convert.ToBase64String(Encoding.UTF8.GetBytes("Giriş yapmak için yetkiniz yoktur."))
+                });
             }
 
             var userRequest = new UserInfo
@@ -386,11 +431,15 @@ public class LoginController : Controller
 
             var rand = new Random();
             var code = String.Empty;
-
+            
             for (int i = 0; i < 6; i++)
             {
                 code += rand.Next(10);
             }
+
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            if (env != null && !env.Equals("Prod"))
+                code = "123456";
 
             var transactionId = Guid.NewGuid();
             await _daprClient.SaveStateAsync(_configuration["DAPR_STATE_STORE_NAME"], $"{transactionId}_Login_Otp_Code", code);
@@ -429,6 +478,7 @@ public class LoginController : Controller
 
             return View("newOtp", new Otp
             {
+                OtpValue = (env != null && !env.Equals("Prod")) ? "123456" : "",
                 Phone = "0" + amorphieUser.MobilePhone.Prefix.ToString().Substring(0, 2) + "******" + amorphieUser.MobilePhone.Number.ToString().Substring(amorphieUser.MobilePhone.Number.Length - 2, 2),
                 transactionId = transactionId,
                 consentId = openBankingLoginRequest.consentId,
@@ -437,7 +487,11 @@ public class LoginController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex.ToString());
-            return StatusCode(500);
+            return RedirectToAction("OpenBankingAuthorize","Authorize",new
+            {
+                riza_no=openBankingLoginRequest.consentId,
+                error_message = Convert.ToBase64String(Encoding.UTF8.GetBytes("Beklenmeyen bir hata oluştu."))
+            });
         }
     }
 

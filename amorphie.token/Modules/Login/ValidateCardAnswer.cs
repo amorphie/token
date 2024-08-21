@@ -17,7 +17,7 @@ public static class ValidateCardAnswer
     ICardHandler cardHandler
     )
     {
-        dynamic variables = new ExpandoObject();
+        dynamic variables = new Dictionary<string, dynamic>();
 
         var transitionName = body.GetProperty("LastTransition").ToString();
 
@@ -28,15 +28,19 @@ public static class ValidateCardAnswer
         var cardCvv = body.GetProperty("cardCvv").ToString();
         var cardPin = body.GetProperty("cardPin").ToString();
 
+        var message  = new Dictionary<string, string>();
+
         ServiceResponse cardResponse = await cardHandler.ValidateCard(ibUser.UserName, cardNo, cardCvv, cardPin);
         if (cardResponse.StatusCode == 200)
         {
-            variables.isValidated = true;
+            variables.Add("isValidated",true);
         }
         else
         {
-            variables.isValidated = false;
+            variables.Add("isValidated",false);
+            message = ErrorMessages.WrongCardInfo;
         }
+        variables.Add("validateCardErrorMessage",message);
         return Results.Ok(variables);
     }
 

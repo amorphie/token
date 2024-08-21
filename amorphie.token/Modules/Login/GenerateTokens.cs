@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using amorphie.token.core.Extensions;
 using amorphie.token.core.Models.Profile;
 using amorphie.token.data;
+using amorphie.token.Modules.OtpProcess;
 using amorphie.token.Services.TransactionHandler;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,6 +25,8 @@ namespace amorphie.token.Modules.Login
         {
             var transitionName = body.GetProperty("LastTransition").ToString();
 
+            bool isSubflow = Convert.ToBoolean(body.GetProperty("IsSubFlow").ToString());
+
             var dataBody = body.GetProperty($"TRX-{transitionName}").GetProperty("Data");
 
             dynamic dataChanged = Newtonsoft.Json.JsonConvert.DeserializeObject<ExpandoObject>(dataBody.ToString());
@@ -31,7 +34,7 @@ namespace amorphie.token.Modules.Login
             dynamic targetObject = new System.Dynamic.ExpandoObject();
 
             targetObject.Data = dataChanged;
-
+        
             var requestBodySerialized = body.GetProperty("requestBody").ToString();
             TokenRequest requestBody = JsonSerializer.Deserialize<TokenRequest>(requestBodySerialized, new JsonSerializerOptions
             {
@@ -52,16 +55,34 @@ namespace amorphie.token.Modules.Login
                 PropertyNameCaseInsensitive = true
             });
 
-            var profileSerialized = body.GetProperty("userInfoSerialized").ToString();
-
-            SimpleProfileResponse profile = JsonSerializer.Deserialize<SimpleProfileResponse>(profileSerialized, new JsonSerializerOptions
+            SimpleProfileResponse? profile;
+            try
             {
-                PropertyNameCaseInsensitive = true
-            });
+                var profileSerialized = body.GetProperty("userInfoSerialized").ToString();
+
+                profile = JsonSerializer.Deserialize<SimpleProfileResponse>(profileSerialized, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+            }
+            catch (System.Exception)
+            {
+                profile = null;
+            }
+            
 
             string xforwardedfor = body.GetProperty("Headers").GetProperty("xforwardedfor").ToString();
             var ipAddress = xforwardedfor.Split(",")[0].Trim();
-
+            try
+            {
+                string UserRoleKey = body.GetProperty("UserRoleKey").ToString();
+                transactionService.RoleKey = Convert.ToInt32(UserRoleKey);
+            }
+            catch (Exception)
+            {
+                transactionService.RoleKey = 10;
+            }
+            
             transactionService.IpAddress = ipAddress;
             var deviceId = body.GetProperty("Headers").GetProperty("xdeviceid").ToString();
             var installationId = body.GetProperty("Headers").GetProperty("xtokenid").ToString();
@@ -99,14 +120,44 @@ namespace amorphie.token.Modules.Login
                     });
                 }
 
+                
 
-                dataChanged.additionalData = result.Response;
+                
+
+                if(isSubflow)
+                {
+                    try
+                    {
+                        var redirect_params = body.GetProperty("LoginRequest").GetProperty("redirect_params");
+                        dataChanged.additionalData = new{
+                            access_token = result.Response!.AccessToken,
+                            expires_in = result.Response!.ExpiresIn,
+                            id_token = result.Response!.IdToken,
+                            refresh_token = result.Response!.RefreshToken,
+                            refresh_token_expires_in = result.Response!.RefreshTokenExpiresIn,
+                            token_type = result.Response!.TokenType,
+                            scope = result.Response!.scope,
+                            redirect_params
+                        };
+                    }
+                    catch (Exception)
+                    {
+                        
+                    }
+                    
+                }
+                else
+                {
+                    dataChanged.additionalData = result.Response;
+                }
+                
                 targetObject.Data = dataChanged;
                 targetObject.TriggeredBy = Guid.Parse(body.GetProperty($"TRX-{transitionName}").GetProperty("TriggeredBy").ToString());
                 targetObject.TriggeredByBehalfOf = Guid.Parse(body.GetProperty($"TRX-{transitionName}").GetProperty("TriggeredByBehalfOf").ToString());
                 dynamic variables = new Dictionary<string, dynamic>();
                 variables.Add("status", true);
                 variables.Add($"TRX{transitionName.ToString().Replace("-", "")}", targetObject);
+                
                 transactionService.Logon.LogonStatus = LogonStatus.Completed;
                 return Results.Ok(variables);
             }

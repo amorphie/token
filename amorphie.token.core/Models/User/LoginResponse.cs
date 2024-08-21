@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using amorphie.token.core.Dtos;
+using amorphie.token.core.Models.Profile;
 
 namespace amorphie.token.core.Models.User;
 
@@ -17,6 +19,10 @@ public class LoginResponse
     public string Reference { get; set; } = string.Empty;
     public string State {get;set;}
     public Guid Id{get;set;}
+
+    public ProfileResponse? profile { get; set; }
+    public IEnumerable<UserClaimDto>? Claims{get;set;}
+   
 }
 
 public class Phone

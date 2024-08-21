@@ -22,7 +22,7 @@ namespace amorphie.token.Services.Consent
             StringContent req = new StringContent("", System.Text.Encoding.UTF8, "application/json");
 
             var httpResponseMessage = await httpClient.PostAsync(
-                $"Authorization/CheckAuthorizationForLogin/clientCode={clientId}&roleId={roleId}&userTCKN={citizenshipNo}?scopeTCKN={citizenshipNo}", req);
+                $"Authorization/CheckAuthorizationForLogin/clientCode={clientId}&roleId={roleId}&userTCKN={citizenshipNo}?scope={citizenshipNo}", req);
 
             if (httpResponseMessage.IsSuccessStatusCode)
             {
@@ -39,7 +39,7 @@ namespace amorphie.token.Services.Consent
             var httpClient = _httpClientFactory.CreateClient("Consent");
 
             var httpResponseMessage = await httpClient.GetAsync(
-                $"Authorization/CheckAuthorizationForLogin/clientCode={clientId}&roleId={roleId}&userTCKN={citizenshipNo}&scopeTCKN={citizenshipNo}");
+                $"Authorization/CheckAuthorizationForLogin/clientCode={clientId}&roleId={roleId}&userTCKN={citizenshipNo}&scope={citizenshipNo}");
 
             if (httpResponseMessage.IsSuccessStatusCode)
             {
@@ -59,7 +59,7 @@ namespace amorphie.token.Services.Consent
                 roleId = roleId,
                 clientCode = clientId,
                 userTCKN = citizenshipNo,
-                scopeTCKN = citizenshipNo
+                scope = citizenshipNo
             }), System.Text.Encoding.UTF8, "application/json");
 
             var httpResponseMessage = await httpClient.PostAsync(
@@ -83,16 +83,23 @@ namespace amorphie.token.Services.Consent
 
             if (httpResponseMessage.IsSuccessStatusCode)
             {
-                var consentResponse = await httpResponseMessage.Content.ReadFromJsonAsync<ConsentResponse>();
-                if (consentResponse == null)
+                try
                 {
-                    throw new ServiceException((int)Errors.InvalidUser, "Consent not found with provided info");
+                    var consentResponse = await httpResponseMessage.Content.ReadFromJsonAsync<ConsentResponse>();
+                    if (consentResponse == null)
+                    {
+                        return new ServiceResponse<ConsentResponse>(){ StatusCode = (int)httpResponseMessage.StatusCode ,Detail = "Consent Not Found"};
+                    }
+                    return new ServiceResponse<ConsentResponse>() { StatusCode = 200, Response = consentResponse };
                 }
-                return new ServiceResponse<ConsentResponse>() { StatusCode = 200, Response = consentResponse };
+                catch (Exception ex)
+                {
+                    return new ServiceResponse<ConsentResponse>(){ StatusCode = 500 ,Detail = "Consent Deserialize Error"};
+                }
             }
             else
             {
-                throw new ServiceException((int)Errors.InvalidUser, "Consent Endpoint Did Not Response Successfully");
+                return new ServiceResponse<ConsentResponse>(){ StatusCode = (int)httpResponseMessage.StatusCode ,Detail = "Consent Endpoint Did Not Response Successfully"};
             }
         }
 
@@ -123,7 +130,7 @@ namespace amorphie.token.Services.Consent
             var httpClient = _httpClientFactory.CreateClient("Consent");
 
             var httpResponseMessage = await httpClient.GetAsync(
-                $"Authorization/CheckConsent/clientCode={clientId}&userTCKN={currentUser}&scopeTCKN={scopeUser}");
+                $"Authorization/CheckConsent/clientCode={clientId}&userTCKN={currentUser}&scope={scopeUser}");
 
             if (httpResponseMessage.IsSuccessStatusCode)
             {
@@ -157,7 +164,7 @@ namespace amorphie.token.Services.Consent
             }
         }
 
-        public async Task<ServiceResponse> CheckAuthorizeForInstutitionConsent(Guid consentId, string citizenshipNo)
+        public async Task<ServiceResponse> CheckAuthorizeForInstitutionConsent(Guid consentId, string citizenshipNo)
         {
             var httpClient = _httpClientFactory.CreateClient("Consent");
             StringContent req = new StringContent("", System.Text.Encoding.UTF8, "application/json");
@@ -170,6 +177,54 @@ namespace amorphie.token.Services.Consent
             else
             {
                 return new ServiceResponse() { StatusCode = (int)httpResponseMessage.StatusCode,Detail = await httpResponseMessage.Content.ReadAsStringAsync()};
+            }
+        }
+
+        public async Task<ServiceResponse> CancelConsent(Guid consentId, string cancelDetailCode)
+        {
+            var httpClient = _httpClientFactory.CreateClient("Consent");
+            StringContent content = new StringContent(            
+            JsonSerializer.Serialize(new
+            {
+                consentId = consentId,
+                cancelDetailCode = cancelDetailCode
+            }), System.Text.Encoding.UTF8, "application/json");
+
+            var request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Delete,
+                RequestUri = new Uri(Configuration["ConsentBaseAddress"]+"OpenBankingConsentHHS/Cancel"),
+                Content = content
+            };
+
+            var httpResponseMessage = await httpClient.SendAsync(
+                request);
+                
+            if (httpResponseMessage.IsSuccessStatusCode)
+            {
+                return new ServiceResponse() { StatusCode = 200 };
+            }
+            else
+            {
+                return new ServiceResponse() { StatusCode = (int)httpResponseMessage.StatusCode,Detail = await httpResponseMessage.Content.ReadAsStringAsync()};
+            }
+        }
+
+        public async Task<ServiceResponse<YosInfo>> GetYosInfo(string code)
+        {
+            var httpClient = _httpClientFactory.CreateClient("Consent");
+
+            var httpResponseMessage = await httpClient.GetAsync(
+                $"/OpenBankingYosInfo/code/{code}");
+
+            if (httpResponseMessage.IsSuccessStatusCode)
+            {
+                var yosInfo = await httpResponseMessage.Content.ReadFromJsonAsync<YosInfo>();
+                return new ServiceResponse<YosInfo>() { StatusCode = 200 , Response = yosInfo };
+            }
+            else
+            {
+                return new ServiceResponse<YosInfo>() { StatusCode = (int)httpResponseMessage.StatusCode };
             }
         }
     }

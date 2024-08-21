@@ -80,12 +80,15 @@ public class PasswordRememberService : ServiceBase, IPasswordRememberService
 
     }
 
-    public async Task<ServiceResponse<bool>> VideoCallAvailableAsync()
+    public async Task<ServiceResponse<GetEkycSettings>> VideoCallAvailableAsync()
     {
 
         var token = await GetVideoCallTokenAsync();
+        bool isVideoCallAvailable = false;
+        bool isActive = false;
 
-        if(token is not null){
+        if (token is not null)
+        {
             using var httpClient = new HttpClient();
             var header = new AuthenticationHeaderValue("Bearer", token);
 
@@ -98,16 +101,18 @@ public class PasswordRememberService : ServiceBase, IPasswordRememberService
                 var response = await resp.Content.ReadFromJsonAsync<VideoCallAvailableResponse>();
                 TimeSpan activeStartHour = TimeSpan.Parse(response.ActiveStartHour);
                 TimeSpan activeDueHour = TimeSpan.Parse(response.ActiveDueHour);
-                if (activeStartHour < DateTime.Now.TimeOfDay && DateTime.Now.TimeOfDay < activeDueHour){
-                    return new ServiceResponse<bool> { Response = true };
+                if (activeStartHour < DateTime.Now.TimeOfDay && DateTime.Now.TimeOfDay < activeDueHour)
+                {
+                    isVideoCallAvailable = true;
+                    isActive = response.IsActive;
                 }
 
             }
 
 
         }
-        
-        return new ServiceResponse<bool> { Response = false };
+
+        return new ServiceResponse<GetEkycSettings> { Response = new GetEkycSettings { VideoCallAvailable = isVideoCallAvailable, IsActive = isActive } };
     }
 
 
@@ -132,10 +137,12 @@ public class PasswordRememberService : ServiceBase, IPasswordRememberService
             Scopes = new List<string>() { "openId" }
         }), Encoding.UTF8, "application/json");
 
-        var httpResponse = httpClient.PostAsync(Configuration["VideoCallAvailableTokenUrl"], request);
-        if (!httpResponse.Result.IsSuccessStatusCode)
+
+        var httpResponse = await httpClient.PostAsync(Configuration["VideoCallAvailableTokenUrl"], request);
+        if (httpResponse.IsSuccessStatusCode)
         {
-            var resp = await httpResponse.Result.Content.ReadFromJsonAsync<TokenResponse>();
+            var resp = await httpResponse.Content.ReadFromJsonAsync<TokenResponse>();
+
             if (resp is not null)
             {
 
@@ -144,7 +151,9 @@ public class PasswordRememberService : ServiceBase, IPasswordRememberService
                 { "ttlInSeconds", resp.ExpiresIn.ToString() }
             };
 
-            // Save Redis 
+                // Save Redis 
+
+                token = resp!.AccessToken;
 
                 await _daprClient.SaveStateAsync<string>(Configuration["DAPR_STATE_STORE_NAME"], "amorphie-videoCallToken", resp!.AccessToken, metadata: metadata);
             }

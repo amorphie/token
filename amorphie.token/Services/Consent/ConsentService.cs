@@ -18,7 +18,7 @@ namespace amorphie.token.Services.Consent
         {
             try
             {
-                var documents = await _daprClient.InvokeMethodAsync<DocumentResponse>(HttpMethod.Post, Configuration["ConsentServiceAppName"], $"Authorization/CheckAuthorizationForLogin/clientCode={clientId}&roleId={roleId}&userTCKN={citizenshipNo}?scopeTCKN={citizenshipNo}");
+                var documents = await _daprClient.InvokeMethodAsync<DocumentResponse>(HttpMethod.Post, Configuration["ConsentServiceAppName"], $"Authorization/CheckAuthorizationForLogin/clientCode={clientId}&roleId={roleId}&userTCKN={citizenshipNo}?scope={citizenshipNo}");
 
                 return new ServiceResponse<DocumentResponse>()
                 {
@@ -49,7 +49,7 @@ namespace amorphie.token.Services.Consent
         {
             try
             {
-                await _daprClient.InvokeMethodAsync(HttpMethod.Get, Configuration["ConsentServiceAppName"], $"Authorization/CheckAuthorizationForLogin/clientCode={clientId}&roleId={roleId}&userTCKN={citizenshipNo}?scopeTCKN={citizenshipNo}");
+                await _daprClient.InvokeMethodAsync(HttpMethod.Get, Configuration["ConsentServiceAppName"], $"Authorization/CheckAuthorizationForLogin/clientCode={clientId}&roleId={roleId}&userTCKN={citizenshipNo}?scope={citizenshipNo}");
 
                 return new ServiceResponse()
                 {
@@ -84,7 +84,7 @@ namespace amorphie.token.Services.Consent
                     roleId = roleId,
                     clientCode = clientId,
                     userTCKN = citizenshipNo,
-                    scopeTCKN = citizenshipNo
+                    scope = citizenshipNo
                 };
 
                 await _daprClient.InvokeMethodAsync(HttpMethod.Post, Configuration["ConsentServiceAppName"], $"Authorization/AuthorizeForLogin", request);
@@ -118,6 +118,10 @@ namespace amorphie.token.Services.Consent
             try
             {
                 var consent = await _daprClient.InvokeMethodAsync<ConsentResponse>(HttpMethod.Get, Configuration["ConsentServiceAppName"], "/OpenBankingConsentHHS/" + consentId.ToString());
+                if(consent.obAccountConsentDetails is not null)
+                {
+                    consent.userType = consent.obAccountConsentDetails.FirstOrDefault()?.UserType;
+                }
 
                 return new ServiceResponse<ConsentResponse>()
                 {
@@ -183,7 +187,7 @@ namespace amorphie.token.Services.Consent
         {
             try
             {
-                var consent = await _daprClient.InvokeMethodAsync<ConsentResponse>(HttpMethod.Get, Configuration["ConsentServiceAppName"], $"/Authorization/CheckConsent/clientCode={clientId}&userTCKN={currentUser}&scopeTCKN={scopeUser}");
+                var consent = await _daprClient.InvokeMethodAsync<ConsentResponse>(HttpMethod.Get, Configuration["ConsentServiceAppName"], $"/Authorization/CheckConsent/clientCode={clientId}&userTCKN={currentUser}&scope={scopeUser}");
 
                 return new ServiceResponse()
                 {
@@ -243,7 +247,7 @@ namespace amorphie.token.Services.Consent
             }
         }
 
-        public async Task<ServiceResponse> CheckAuthorizeForInstutitionConsent(Guid consentId, string citizenshipNo)
+        public async Task<ServiceResponse> CheckAuthorizeForInstitutionConsent(Guid consentId, string citizenshipNo)
         {
             try
             {
@@ -269,6 +273,70 @@ namespace amorphie.token.Services.Consent
             catch (System.Exception ex)
             {
                 return new ServiceResponse()
+                {
+                    StatusCode = 500,
+                    Detail = ex.ToString()
+                };
+            }
+        }
+
+        public async Task<ServiceResponse> CancelConsent(Guid consentId, string cancelDetailCode)
+        {
+            try
+            {
+                await _daprClient.InvokeMethodAsync(HttpMethod.Delete, Configuration["ConsentServiceAppName"], $"/OpenBankingConsentHHS/Cancel",new{
+                    consentId = consentId,
+                    cancelDetailCode = cancelDetailCode
+                });
+
+                return new ServiceResponse()
+                {
+                    StatusCode = 200,
+                    Detail = ""
+                };
+            }
+            catch (InvocationException ex)
+            {
+                return new ServiceResponse()
+                {
+                    StatusCode = (int)ex.Response.StatusCode,
+                    Detail = await ex.Response.Content.ReadAsStringAsync()
+                };
+            }
+            catch (System.Exception ex)
+            {
+                return new ServiceResponse()
+                {
+                    StatusCode = 500,
+                    Detail = ex.ToString()
+                };
+            }
+        }
+
+        public async Task<ServiceResponse<YosInfo>> GetYosInfo(string code)
+        {
+            try
+            {
+                var yosInfo = await _daprClient.InvokeMethodAsync<YosInfo>(HttpMethod.Get, Configuration["ConsentServiceAppName"], "OpenBankingYosInfo/code/"+code);
+
+                return new ServiceResponse<YosInfo>()
+                {
+                    StatusCode = 200,
+                    Response = yosInfo,
+                    Detail = ""
+                };
+            }
+            catch (InvocationException ex)
+            {
+                return new ServiceResponse<YosInfo>()
+                {
+                    StatusCode = (int)ex.Response.StatusCode,
+                    Detail = await ex.Response.Content.ReadAsStringAsync()
+                };
+            }
+            catch (System.Exception ex)
+            {
+                return new ServiceResponse<YosInfo>()
                 {
                     StatusCode = 500,
                     Detail = ex.ToString()

@@ -104,6 +104,10 @@ namespace amorphie.token.Modules.Login
            .ExcludeFromDescription()
            .Produces(StatusCodes.Status200OK);
 
+            app.MapPost("/amorphie-mobile-remember-password-validate-identity", CheckConsent.checkConsent)
+            .ExcludeFromDescription()
+            .Produces(StatusCodes.Status200OK);
+
             //Ekyc processes 
             app.MapPost("/amorphie-ekyc-prepare", EkycPrepare.Prepare)
                 .ExcludeFromDescription()
@@ -193,6 +197,17 @@ namespace amorphie.token.Modules.Login
                 .ExcludeFromDescription()
                 .Produces(StatusCodes.Status200OK);
             #endregion
+
+            app.MapPost("/amorphie-mobile-remember-password-switch-method", RememberPassword.SwitchMethod)
+                .ExcludeFromDescription()
+                .Produces(StatusCodes.Status200OK);
+            app.MapPost("/amorphie-mobile-remember-password-validate-card", ValidateCardAnswer.validateCardAnswer)
+                .ExcludeFromDescription()
+                .Produces(StatusCodes.Status200OK);
+
+            app.MapPost("/amorphie-mobile-remember-password-validate-question", ValidateSecretQuestionAnswer.validateSecretQuestionAnswer)
+                .ExcludeFromDescription()
+                .Produces(StatusCodes.Status200OK);
 
         }
 

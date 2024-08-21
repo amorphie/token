@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Reflection;
 using System.Security.Claims;
+using amorphie.token.core.Dtos;
 using amorphie.token.core.Models.Consent;
 using amorphie.token.core.Models.Profile;
 using amorphie.token.Services.TransactionHandler;
@@ -42,13 +43,12 @@ namespace amorphie.token.Services.ClaimHandler
                     return null;
                 Type t = _transactionService!.GetType();
 
-                var property = t.GetProperties().FirstOrDefault(p => p.Name.ToLower(new CultureInfo("en-US",false)) == claimPath[1]);
-                if (property == null)
-                    return null;
-                if (property!.GetValue(_transactionService!) == null)
-                    return null;
+                var propValue = GetPropertyValue(_transactionService, string.Join('.', claimPath.ToList().Skip(1)));
 
-                return property!.GetValue(_transactionService!)!.ToString()!;
+                if (propValue != null)
+                    return propValue!.ToString()!;
+                else
+                    return null;
             }
             if (claimPath.First().Equals("tag"))
             {
@@ -59,11 +59,12 @@ namespace amorphie.token.Services.ClaimHandler
                     var tagName = claimPath[3];
                     var fieldName = claimPath[4];
 
-                    var tagData = await _tagService.GetTagInfo(domain, entity, tagName, _queryStringForTag!);
-                    if (tagData == null)
+                    var tagDataResponse = await _tagService.GetTagInfo(domain, entity, tagName, _queryStringForTag!);
+                    if (tagDataResponse.StatusCode != 200)
                         return null;
+                    var tagData = tagDataResponse.Response;
 
-                    return tagData[fieldName]?.ToString() ?? null;
+                    return tagData![fieldName]?.ToString() ?? null;
 
                 }
                 catch (Exception ex)
@@ -86,6 +87,21 @@ namespace amorphie.token.Services.ClaimHandler
                     return null;
 
                 return property!.GetValue(_user!)!.ToString()!;
+            }
+
+            if (claimPath.First().Equals("userClaim"))
+            {
+                if (_user == null)
+                    return null;
+
+                var claim = _user.Claims.FirstOrDefault(c => c.ClaimName.ToLower(new CultureInfo("en-US",false)).Equals(claimPath[1].ToLower(new CultureInfo("en-US",false))));
+
+                if(claim is {})
+                {
+                    return claim.ClaimValue;
+                }
+
+                return null;
             }
 
             if (claimPath.First().Equals("openbanking"))
@@ -160,11 +176,12 @@ namespace amorphie.token.Services.ClaimHandler
                     var tagName = claimPath[3];
                     var fieldName = claimPath[4];
 
-                    var tagData = await _tagService.GetTagInfo(domain, entity, tagName, _queryStringForTag!);
-                    if (tagData == null)
+                    var tagDataResponse = await _tagService.GetTagInfo(domain, entity, tagName, _queryStringForTag!);
+                    if (tagDataResponse.StatusCode != 200)
                         return null;
+                    var tagData = tagDataResponse.Response;
 
-                    return tagData[fieldName].ToString();
+                    return tagData![fieldName]?.ToString() ?? null;
 
                 }
                 catch (Exception ex)
@@ -187,6 +204,21 @@ namespace amorphie.token.Services.ClaimHandler
                     return null;
 
                 return property!.GetValue(_user!);
+            }
+
+            if (claimPath.First().Equals("userClaim"))
+            {
+                if (_user == null)
+                    return null;
+
+                var claim = _user.Claims.FirstOrDefault(c => c.ClaimName.ToLower(new CultureInfo("en-US",false)).Equals(claimPath[1].ToLower(new CultureInfo("en-US",false))));
+
+                if(claim is {})
+                {
+                    return claim.ClaimValue;
+                }
+                
+                return null;
             }
 
             if (claimPath.First().Equals("openbanking"))
@@ -260,7 +292,7 @@ namespace amorphie.token.Services.ClaimHandler
             }
             else
             {
-                var property = src.GetType().GetProperties().FirstOrDefault(p => p.Name.ToLower() == propName.ToLower());
+                var property = src.GetType().GetProperties().FirstOrDefault(p => p.Name.ToLower(new CultureInfo("en-US",false)) == propName.ToLower());
                 if(property is {})
                 {
                     if(property.PropertyType.IsEnum)
@@ -273,7 +305,7 @@ namespace amorphie.token.Services.ClaimHandler
                     }
                 }
                 
-                return property != null ? property.GetValue(src, null).ToString() : null;
+                return property != null ? property.GetValue(src, null)?.ToString() : null;
             }
         }
         public async Task<List<Claim>> PopulateClaims(List<string> clientClaims, LoginResponse? user, SimpleProfileResponse? profile = null, ConsentResponse? consent = null, core.Models.Collection.User? collectionUser = null)
@@ -295,7 +327,7 @@ namespace amorphie.token.Services.ClaimHandler
             {
                 _user = user;
                 _queryStringForTag = string.Empty;
-                _queryStringForTag += "?reference=" + _user!.Reference;
+                _queryStringForTag += "?user_reference=" + _user!.Reference;
                 _queryStringForTag += "&mail=" + _user!.EMail;
                 _queryStringForTag += "&phone=" + _user!.MobilePhone!.ToString();
             }

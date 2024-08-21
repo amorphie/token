@@ -18,6 +18,8 @@ public static class ValidateSecretQuestionAnswer
     {
         dynamic variables = new ExpandoObject();
 
+        var message  = new Dictionary<string, string>();
+
         var transitionName = body.GetProperty("LastTransition").ToString();
 
         var ibUserSerialized = body.GetProperty("ibUserSerialized").ToString();
@@ -44,7 +46,9 @@ public static class ValidateSecretQuestionAnswer
         else
         {
             variables.isValidated = false;
+            message = ErrorMessages.WrongQuestionAnswer;
         }
+        variables.validateQuestionErrorMessage = message;
 
         return Results.Ok(variables);
     }
