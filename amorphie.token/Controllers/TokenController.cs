@@ -76,6 +76,7 @@ public class TokenController : Controller
     [HttpGet(".well-known/{clientCode}/openid-configuration")]
     public async Task<IActionResult> OpenIdConfiguration(string clientCode)
     {
+        Request.Headers.Keys.ToList().ForEach(k => Console.WriteLine($"Header {k} : {Request.Headers[k]}" ));
         var basepath = $"{Request.Scheme}://{Request.Host}";
 
         var clientResponse = await _clientService.CheckClientByCode(clientCode);
