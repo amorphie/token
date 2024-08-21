@@ -76,8 +76,10 @@ public class TokenController : Controller
     [HttpGet(".well-known/{clientCode}/openid-configuration")]
     public async Task<IActionResult> OpenIdConfiguration(string clientCode)
     {
-        Request.Headers.Keys.ToList().ForEach(k => Console.WriteLine($"Header {k} : {Request.Headers[k]}" ));
-        var basepath = $"{Request.Scheme}://{Request.Host}";
+        var forwardedHostHeader = Request.Headers["X-Forwarded-Host"];
+        var host = forwardedHostHeader.ToString().Split(",").First();
+        
+        var basepath = "https://"+host;
 
         var clientResponse = await _clientService.CheckClientByCode(clientCode);
         if(clientResponse.StatusCode != 200)
