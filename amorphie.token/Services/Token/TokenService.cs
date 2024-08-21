@@ -177,9 +177,18 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
                 var consentData = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(_consent!.additionalData!);
                 if(_consent.consentType!.Equals("OB_Account"))
                 {
-                    DateTime lastAccessDate = DateTime.Parse(consentData!.hspBlg.iznBlg.erisimIzniSonTrh.ToString());
-                    var DateDiffAsSeconds = Convert.ToInt32((lastAccessDate.AddMilliseconds(-1) - _currentDate).TotalSeconds);
-                    accessDuration = DateDiffAsSeconds > 30 * 24 * 60 * 60 ? (30 * 24 * 60 * 60) : DateDiffAsSeconds; 
+                    if(_tokenRequest.GrantType.Equals("refresh_token"))
+                    {
+                        var DateDiffAsSeconds = Convert.ToInt32((_refreshTokenInfo.ExpiredAt - _currentDate).TotalSeconds);
+                        accessDuration = DateDiffAsSeconds > 30 * 24 * 60 * 60 ? (30 * 24 * 60 * 60) : DateDiffAsSeconds; 
+                    
+                    }
+                    else
+                    {
+                        DateTime lastAccessDate = DateTime.Parse(consentData!.hspBlg.iznBlg.erisimIzniSonTrh.ToString());
+                        var DateDiffAsSeconds = Convert.ToInt32((lastAccessDate.AddMilliseconds(-1) - _currentDate).TotalSeconds);
+                        accessDuration = DateDiffAsSeconds > 30 * 24 * 60 * 60 ? (30 * 24 * 60 * 60) : DateDiffAsSeconds; 
+                    }
                 }
                 if(_consent.consentType.Equals("OB_Payment"))
                 {
@@ -350,7 +359,7 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
         if(_tokenRequest.GrantType.Equals("refresh_token"))
         {
             tokenResponse.RefreshToken = _tokenRequest.RefreshToken;
-            tokenResponse.RefreshTokenExpiresIn = Convert.ToInt32((_refreshTokenInfo.ExpiredAt - DateTime.Now).TotalSeconds);
+            tokenResponse.RefreshTokenExpiresIn = Convert.ToInt32((_refreshTokenInfo.ExpiredAt - _currentDate).TotalSeconds);
         }
         else
         {
