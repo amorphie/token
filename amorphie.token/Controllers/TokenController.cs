@@ -440,7 +440,7 @@ public class TokenController : Controller
                 var errorModel = new ErrorModel();
                 errorModel.ErrorCode = 401;
                 errorModel.ErrorType = "invalid_token";
-                errorModel.Error = "The Refresh Token is Invalid";
+                errorModel.Error.Description = "The Refresh Token is Invalid";
                 return StatusCode(401, errorModel);
             }
 
@@ -477,6 +477,12 @@ public class TokenController : Controller
         string? xforwardedfor = HttpContext.Request.Headers.ContainsKey("X-Forwarded-For") ? HttpContext.Request.Headers.FirstOrDefault(h => h.Key.ToLower().Equals("x-forwarded-for")).Value.ToString() : HttpContext.Connection.RemoteIpAddress?.ToString();
         var ipAddress = xforwardedfor?.Split(",")[0].Trim() ?? xforwardedfor;
         _transactionService.IpAddress = ipAddress!;
+
+        var deviceId = HttpContext.Request.Headers["X-Device-Id"];
+        if(!string.IsNullOrWhiteSpace(deviceId))
+        {
+            _tokenService.DeviceId = deviceId!;
+        }
 
         var generateTokenRequest = tokenRequest.MapTo<GenerateTokenRequest>();
         if(generateTokenRequest.Scopes is not {} || generateTokenRequest.Scopes?.Count() == 0)
@@ -539,7 +545,7 @@ public class TokenController : Controller
                 var errorModel = new ErrorModel();
                 errorModel.ErrorCode = 401;
                 errorModel.ErrorType = "invalid_token";
-                errorModel.Error = "The Refresh Token is Invalid";
+                errorModel.Error.Description = "The Refresh Token is Invalid";
                 return Results.Json(errorModel, statusCode: 401);
             }
 

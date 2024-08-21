@@ -33,6 +33,8 @@ ITransactionService transactionService, IRoleService roleService, IbDatabaseCont
         private IProfileService? _profileService = profileService;
         private IRoleService? _roleService = roleService;
 
+        public string DeviceId { set => throw new NotImplementedException(); }
+
         public Task<ServiceResponse<TokenResponse>> GenerateOpenBankingToken(GenerateTokenRequest tokenRequest, ConsentResponse consent)
         {
             throw new NotImplementedException();

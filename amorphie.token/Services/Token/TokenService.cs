@@ -55,6 +55,8 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
     private TokenInfo? _refreshTokenInfo;
     private string? _deviceId;
 
+    public string DeviceId { set => _deviceId = value;}
+
     private async Task PersistTokenInfo()
     {
         await WriteToDb();
@@ -1114,6 +1116,7 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
     {
         _tokenRequest = tokenRequest;
         _user = null;
+        
         ServiceResponse<ClientResponse> clientResponse;
         if (Guid.TryParse(_tokenRequest.ClientId!, out Guid _))
         {
