@@ -100,7 +100,7 @@ namespace amorphie.token.Modules.Login
                 hasNewIdentityCard = false;
             }
 
-             if (kpsResult is not null && kpsResult.CertificationType == KpsCertificationType.OldCertificate){
+             if (kpsResult is not null && kpsResult.CertificationType != KpsCertificationType.NewCertificate){
                 hasNewIdentityCard = false;
              }
             if(!hasNewIdentityCard){
