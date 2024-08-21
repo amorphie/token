@@ -86,9 +86,9 @@ namespace amorphie.token.core.Constants
 
         public static readonly Dictionary<string, string> OldIdentityCard = new()
         {
-            {"tr-TR","Yeni şifre alma işlemine devam edebilmemiz için yeni tip TC kimlik kartınız olmalıdır.Detaylı bilgi için 0850 222 29 10 numaralı Müşteri İletişim Merkezimiz ile iletişime geçebilirsiniz."},
-            {"en-EN","To proceed with the process of obtaining a new password, you must have the new type of Turkish ID card. For detailed information, you can contact our Customer Communication Center at 0850 222 29 10."},
-            {"en-US","To proceed with the process of obtaining a new password, you must have the new type of Turkish ID card. For detailed information, you can contact our Customer Communication Center at 0850 222 29 10."}
+            {"tr-TR","Yeni şifre alma işlemine devam edebilmemiz için yeni tip TC kimlik kartınız olmalıdır.Detaylı bilgi için {customerServicePhoneNumber} numaralı Müşteri İletişim Merkezimiz ile iletişime geçebilirsiniz."},
+            {"en-EN","To proceed with the process of obtaining a new password, you must have the new type of Turkish ID card. For detailed information, you can contact our Customer Communication Center at {customerServicePhoneNumber}."},
+            {"en-US","To proceed with the process of obtaining a new password, you must have the new type of Turkish ID card. For detailed information, you can contact our Customer Communication Center at {customerServicePhoneNumber}."}
         };
 
         public static readonly Dictionary<string, string> HasNotNfcAndNewIdentityCard = new()
@@ -113,9 +113,9 @@ namespace amorphie.token.core.Constants
 
          public static readonly Dictionary<string, string> EkycOcrMaxTryCountError = new()
         {
-            {"tr-TR","Yaptığınız denemeler sonucunda güvenliğiniz sebebiyle şifre yenileme sürecini ilerletemiyoruz. Dilerseniz 0850 222 29 10 numaralı Müşteri İletişim Merkezimiz ile iletişime geçebilirsiniz."},
-            {"en-EN","As a result of your attempts, we cannot proceed with the password renewal process due to your security. If you wish, you can contact our Customer Communications Center at 0850 222 29 10."},
-            {"en-US","As a result of your attempts, we cannot proceed with the password renewal process due to your security. If you wish, you can contact our Customer Communications Center at 0850 222 29 10."}
+            {"tr-TR","Yaptığınız denemeler sonucunda güvenliğiniz sebebiyle şifre yenileme sürecini ilerletemiyoruz. Dilerseniz {customerServicePhoneNumber} numaralı Müşteri İletişim Merkezimiz ile iletişime geçebilirsiniz."},
+            {"en-EN","As a result of your attempts, we cannot proceed with the password renewal process due to your security. If you wish, you can contact our Customer Communications Center at {customerServicePhoneNumber}."},
+            {"en-US","As a result of your attempts, we cannot proceed with the password renewal process due to your security. If you wish, you can contact our Customer Communications Center at {customerServicePhoneNumber}."}
         };
 
 

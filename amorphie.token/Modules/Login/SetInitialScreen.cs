@@ -16,7 +16,8 @@ namespace amorphie.token.Modules.Login
         [FromBody] dynamic body,
         [FromServices] IbDatabaseContext ibContext,
         [FromServices] IPasswordRememberService passwordRememberService,
-        [FromServices] IEkycProvider ekycProvider
+        [FromServices] IEkycProvider ekycProvider,
+        IConfiguration configuration
 
         )
         {
@@ -81,7 +82,7 @@ namespace amorphie.token.Modules.Login
             var videoCallAvailable = await passwordRememberService.VideoCallAvailableAsync();
             // Has nfc ?
 
-            if(videoCallAvailable.Response){
+            if(videoCallAvailable.Response.VideoCallAvailable){
                 hasVideoCall = true;
             }
 
@@ -114,6 +115,8 @@ namespace amorphie.token.Modules.Login
             variables.Add("HasNfc",hasNfc);
             variables.Add("HasNewIdentityCard",hasNewIdentityCard);
             variables.Add("switchMethodErrorMessage",switchMethodErrorMessage);
+            variables.Add("EkycIsActive",videoCallAvailable.Response.IsActive);
+            variables.Add("BasePath",configuration["BasePath"]);
                         
 
 
