@@ -359,7 +359,7 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
         if(_tokenRequest.GrantType.Equals("refresh_token"))
         {
             tokenResponse.RefreshToken = _tokenRequest.RefreshToken;
-            tokenResponse.RefreshTokenExpiresIn = Convert.ToInt32((_refreshTokenInfo.ExpiredAt - _currentDate).TotalSeconds);
+            tokenResponse.RefreshTokenExpiresIn = Convert.ToInt32((_refreshTokenInfo.ExpiredAt.ToLocalTime() - _currentDate).TotalSeconds);
         }
         else
         {
