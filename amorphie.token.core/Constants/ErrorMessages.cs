@@ -93,9 +93,9 @@ namespace amorphie.token.core.Constants
 
         public static readonly Dictionary<string, string> HasNotNfcAndNewIdentityCard = new()
         {
-            {"tr-TR","Hizmet saatleri dışında olduğumuz için şifre alma sürecinize devam edilemedi. 08.00 - 01.00 saatleri arasında görüntülü görüşme ile müşteri temsilcimize bağlanarak veya NFC özelliği bulunan bir cihaz ile yeni şifre alma sürecine devam edebilirsiniz."},
-            {"en-EN","Your password retrieval process could not be completed as we are outside of service hours. You can continue the process by connecting with our customer representative via video call between 08:00 - 01:00, or by using a device with NFC capability."},
-            {"en-US","Your password retrieval process could not be completed as we are outside of service hours. You can continue the process by connecting with our customer representative via video call between 08:00 - 01:00, or by using a device with NFC capability."}
+            {"tr-TR","Hizmet saatleri dışında olduğumuz için şifre alma sürecinize devam edilemedi. {customerServiceHours} saatleri arasında görüntülü görüşme ile müşteri temsilcimize bağlanarak veya NFC özelliği bulunan bir cihaz ile yeni şifre alma sürecine devam edebilirsiniz."},
+            {"en-EN","Your password retrieval process could not be completed as we are outside of service hours. You can continue the process by connecting with our customer representative via video call between {customerServiceHours}, or by using a device with NFC capability."},
+            {"en-US","Your password retrieval process could not be completed as we are outside of service hours. You can continue the process by connecting with our customer representative via video call between {customerServiceHours}, or by using a device with NFC capability."}
         };
 
         public static readonly Dictionary<string, string> WrongCardInfo = new()
