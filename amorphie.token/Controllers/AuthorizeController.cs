@@ -577,6 +577,20 @@ public class AuthorizeController : Controller
         return Results.Ok(new{AuthCode=authResponse.Response!.Code});
     }
 
+    [HttpGet("openbanking/redirect/{redirectId}")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> OpenBankingRedirect(Guid redirectId)
+    {
+        var redirectUrl = await _daprClient.GetStateAsync<string>(_configuration["DAPR_STATE_STORE_NAME"], $"OpenBankingRedirect_{redirectId}");
+
+        if(!string.IsNullOrEmpty(redirectUrl))
+        {
+            return Redirect(redirectUrl);
+        }
+
+        return BadRequest();
+    }
+
     [HttpGet("public/OpenBankingAuthorize")]
     [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<IActionResult> OpenBankingAuthorize(OpenBankingAuthorizationRequest authorizationRequest)
@@ -593,21 +607,6 @@ public class AuthorizeController : Controller
             return View("Error");
         }
         var consent = consentResult.Response;
-
-        if(consent!.state!.Equals("I") || consent!.state!.Equals("K") || consent!.state!.Equals("S"))
-        {
-            ViewBag.hasError = true;
-            ViewBag.errorMessage = "Geçersiz Rıza";
-            return View("NewLogin", loginModel);
-        }
-
-        if(!consent!.state!.Equals("B"))
-        {
-            await _consentService.CancelConsent(authorizationRequest.riza_no,"07");
-            ViewBag.hasError = true;
-            ViewBag.errorMessage = "Geçersiz Rıza";
-            return View("NewLogin", loginModel);
-        }
 
         var consentData = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(consent!.additionalData!);
         string kmlkNo = consent.userTCKN!;
@@ -632,10 +631,26 @@ public class AuthorizeController : Controller
         {
             ViewBag.hasError = true;
             ViewBag.errorMessage = Encoding.UTF8.GetString(Convert.FromBase64String(authorizationRequest.error_message));
+            return View("NewLogin", loginModel);
         }
         else
         {
             ViewBag.hasError = false;
+        }
+
+        if(consent!.state!.Equals("I") || consent!.state!.Equals("K") || consent!.state!.Equals("S"))
+        {
+            ViewBag.hasError = true;
+            ViewBag.errorMessage = "Geçersiz Rıza";
+            return View("NewLogin", loginModel);
+        }
+
+        if(!consent!.state!.Equals("B"))
+        {
+            await _consentService.CancelConsent(authorizationRequest.riza_no,"07");
+            ViewBag.hasError = true;
+            ViewBag.errorMessage = "Geçersiz Rıza";
+            return View("NewLogin", loginModel);
         }
         
         // if (customerInfo!.data!.profile!.businessLine == "X")

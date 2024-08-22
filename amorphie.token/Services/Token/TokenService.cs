@@ -179,7 +179,7 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
                 {
                     if(_tokenRequest.GrantType.Equals("refresh_token"))
                     {
-                        var DateDiffAsSeconds = Convert.ToInt32((_refreshTokenInfo.ExpiredAt - _currentDate).TotalSeconds);
+                        var DateDiffAsSeconds = Convert.ToInt32((_refreshTokenInfo.ExpiredAt.ToLocalTime() - _currentDate).TotalSeconds);
                         accessDuration = DateDiffAsSeconds > 30 * 24 * 60 * 60 ? (30 * 24 * 60 * 60) : DateDiffAsSeconds; 
                     
                     }
@@ -434,6 +434,16 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
         //OpenBanking Set Consent
         if(relatedToken.ConsentId is Guid)
         {
+            if(!relatedToken.ConsentId.Equals(tokenRequest.ConsentId))
+            {
+                return new ServiceResponse<TokenResponse>()
+                {
+                    StatusCode = 484,
+                    Detail = "Consent Mismatch",
+                    Response = null
+                };
+            }
+
             var consent = await _consentService.GetConsent(relatedToken.ConsentId.Value);
             _consent = consent.Response;
         }

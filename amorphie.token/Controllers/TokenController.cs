@@ -682,7 +682,6 @@ public class TokenController : Controller
 
         if(String.IsNullOrWhiteSpace(jws.Value))
         {
-            
             errObj.httpCode = 403;
             errObj.httpMessage = "Forbidden";
             errObj.errorCode = "TR.OHVPS.Resource.MissingSignature";
@@ -831,6 +830,33 @@ public class TokenController : Controller
 
         if (openBankingTokenRequest.AuthType!.Equals("yet_kod"))
         {
+            if(!consent.Response!.state!.Equals("Y"))
+            {
+                errObj.httpCode = 400;
+                errObj.httpMessage = "Bad Request";
+                errObj.errorCode = "TR.OHVPS.Resource.ConsentMismatch";
+                errObj.moreInformation = "Consent State is Not Valid";
+                errObj.moreInformationTr = "Rıza durumu geçersiz.";
+
+                SignatureHelper.SetXJwsSignatureHeader(HttpContext, _configuration, errObj);
+
+                return StatusCode(400, errObj);
+            }
+
+            var authCode = _databaseContext.AuthCodes.AsNoTracking().FirstOrDefault(a => a.Code.Equals(openBankingTokenRequest.AuthCode));
+            if(authCode is not {})
+            {
+                errObj.httpCode = 400;
+                errObj.httpMessage = "Bad Request";
+                errObj.errorCode = "TR.OHVPS.Business.InvalidContent";
+                errObj.moreInformation = "Resource Not Found";
+                errObj.moreInformationTr = "Kaynak bulunamadı.";
+               
+                SignatureHelper.SetXJwsSignatureHeader(HttpContext, _configuration, errObj);
+
+                return StatusCode(404,errObj);
+            }
+
             generateTokenRequest.GrantType = "authorization_code";
             generateTokenRequest.ClientId = client!.id;
             generateTokenRequest.ClientSecret = client.clientsecret;
@@ -888,8 +914,9 @@ public class TokenController : Controller
         {
             generateTokenRequest.GrantType = "refresh_token";
             generateTokenRequest.RefreshToken = openBankingTokenRequest.RefreshToken;
+            generateTokenRequest.ConsentId = Guid.Parse(openBankingTokenRequest.ConsentNo!);
 
-            if(!consent.Response!.state!.Equals("K"))
+            if(!consent.Response!.state!.Equals("K") && !consent.Response!.state!.Equals("E"))
             {
                 errObj.httpCode = 400;
                 errObj.httpMessage = "Bad Request";
@@ -903,6 +930,18 @@ public class TokenController : Controller
             }
 
             var token = await _tokenService.GenerateTokenWithRefreshToken(generateTokenRequest);
+            if (token.StatusCode == 484)
+            {
+                errObj.httpCode = 401;
+                errObj.httpMessage = "Unauthorized";
+                errObj.errorCode = "TR.OHVPS.Business.InvalidContent";
+                errObj.moreInformation = "Provided consent no does not belong to the provided refresh token";
+                errObj.moreInformationTr = "Gönderilen rıza gönderilen yenileme belirtecine ait değil.";
+
+                SignatureHelper.SetXJwsSignatureHeader(HttpContext, _configuration, errObj);
+                return StatusCode(401, errObj);
+            }
+
             if (token.StatusCode == 403)
             {
                 errObj.httpCode = 401;
