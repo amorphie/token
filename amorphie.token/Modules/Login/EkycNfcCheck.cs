@@ -15,39 +15,35 @@ public static class EkycNfcCheck
     {
 
         var transitionName = body.GetProperty("LastTransition").ToString();
-        // var transactionId = body.GetProperty("InstanceId").ToString();
-        var dataBody = body.GetProperty($"TRX-{transitionName}").GetProperty("Data");
 
+        int nfcFailedTryCount = EkycConstants.NfcFailedTryCount;
+        Int32.TryParse(body.GetProperty("NfcFailedTryCount")?.ToString(), out nfcFailedTryCount);
+
+        var dataBody = body.GetProperty($"TRX-{transitionName}").GetProperty("Data");
         dynamic dataChanged = Newtonsoft.Json.JsonConvert.DeserializeObject<ExpandoObject>(dataBody.ToString());
+
         dynamic targetObject = new System.Dynamic.ExpandoObject();
         targetObject.Data = dataChanged;
 
-        var isSkip = dataChanged.entityData.IsSkip;
         dynamic variables = new Dictionary<string, dynamic>();
 
+        dataChanged.additionalData = new ExpandoObject();
+        var callType = body.GetProperty("CallType").ToString();
+        var instance = body.GetProperty("Instance").ToString();
+        dataChanged.additionalData.isEkyc = true;// gitmek istediği data 
+        dataChanged.additionalData.callType = callType;
+        var ApplicantFullName = body.GetProperty("ApplicantFullName").ToString();
+        dataChanged.additionalData.applicantFullName = ApplicantFullName;
+        dataChanged.additionalData.instanceId = instance;
+
+        var isSkip = dataChanged.entityData.IsSkip;
         variables.Add("IsSkip", isSkip);
         bool nfcStatus = false;
         if (!isSkip)
         {
             var nfcIsSuccess = dataChanged.entityData.IsSuccess;
 
-            dataChanged.additionalData = new ExpandoObject();
-            var callType = body.GetProperty("CallType").ToString();
-            var instance = body.GetProperty("Instance").ToString();
-            // var name = body.GetProperty("Name").ToString();
-            // var surname = body.GetProperty("Surname").ToString();
-            dataChanged.additionalData.isEkyc = true;// gitmek istediği data 
-            dataChanged.additionalData.callType = callType;
-            var ApplicantFullName = body.GetProperty("ApplicantFullName").ToString();
-            dataChanged.additionalData.applicantFullName = ApplicantFullName;
-            // dataChanged.additionalData.customerName = name; // bu kısımları doldur.
-            // dataChanged.additionalData.customerSurname = surname;
-            dataChanged.additionalData.instanceId = instance;
-
-
             bool identityNoCompatible = false;
-
-
 
             var sessionId = body.GetProperty("SessionId").ToString();
             if (nfcIsSuccess && !String.IsNullOrEmpty(sessionId))
@@ -75,31 +71,38 @@ public static class EkycNfcCheck
 
             if (!nfcStatus)
             {
+                nfcCurrentFailedCount++;
 
-                //Max-Min try count 
-                if (nfcCurrentFailedCount >= EkycConstants.NfcFailedTryCount ||nfcCurrentFailedCount==0)
+
+                if (nfcCurrentFailedCount < nfcFailedTryCount)
+
                 {
                     dataChanged.additionalData.pages = new List<EkycPageModel>
                 {
                     EkycAdditionalDataContstants.StandartItem,
-                    EkycAdditionalDataContstants.NfcFailedBiggerThanMinForRetry
-                };
 
+                    EkycAdditionalDataContstants.NfcFailedMinForRetry,
+                    EkycAdditionalDataContstants.OcrSuccessForNfcItem
+
+                };
+ 
                 }
-                if (nfcCurrentFailedCount >= EkycConstants.NfcFailedMaxTryCount)
+
+                if (nfcCurrentFailedCount >= nfcFailedTryCount)
+
                 {
                     //Min try additional data
                     dataChanged.additionalData.pages = new List<EkycPageModel>
                 {
                     EkycAdditionalDataContstants.StandartItem,
-                    EkycAdditionalDataContstants.NfcFailedMinForRetry
+
+                    EkycAdditionalDataContstants.NfcFailedBiggerThanMinForRetry,
+                    EkycAdditionalDataContstants.OcrSuccessForNfcItem
+
                 };
                 }
 
-
-
                 variables.Add("FailedStepName", "nfc");
-                nfcCurrentFailedCount++;
             }
 
             if (nfcIsSuccess && nfcStatus)
@@ -108,25 +111,26 @@ public static class EkycNfcCheck
                 EkycAdditionalDataContstants.StandartItem
             };
             }
-            dataChanged.additionalData.exitTransition = "amorphie-ekyc-exit";
-
-
 
             variables.Add("Init", true);
 
             variables.Add("CurrentNfcFailedCount", nfcCurrentFailedCount);
         }
+        else
+        {
+            dataChanged.additionalData.pages = new List<EkycPageModel>{
+                EkycAdditionalDataContstants.StandartItem
+            };
+        }
+
+        dataChanged.additionalData.exitTransition = "amorphie-ekyc-exit";
 
         variables.Add("NfcStatus", nfcStatus);
-        // variables.Add("NfcStatus", true);
-
 
         targetObject.TriggeredBy = Guid.Parse(body.GetProperty($"TRX-{transitionName}").GetProperty("TriggeredBy").ToString());
         targetObject.TriggeredByBehalfOf = Guid.Parse(body.GetProperty($"TRX-{transitionName}").GetProperty("TriggeredByBehalfOf").ToString());
         variables.Add($"TRX{transitionName.ToString().Replace("-", "")}", targetObject);
 
         return Results.Ok(variables);
-
-        // return Task.FromResult(Results.Ok("data"));
     }
 }

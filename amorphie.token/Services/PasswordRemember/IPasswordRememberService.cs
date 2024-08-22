@@ -1,4 +1,6 @@
-﻿namespace amorphie.token;
+﻿using amorphie.token.core.Models.RememberPassword;
+
+namespace amorphie.token;
 
 public interface IPasswordRememberService
 {
@@ -14,5 +16,5 @@ public interface IPasswordRememberService
     /// for remember password process
     /// </summary>
     /// <returns></returns>
-    Task<ServiceResponse<bool>> VideoCallAvailableAsync();
+    Task<ServiceResponse<GetEkycSettings>> VideoCallAvailableAsync();
 }
