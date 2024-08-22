@@ -434,10 +434,7 @@ public class TokenController : Controller
             }
             else
             {
-                var errorModel = new ErrorModel();
-                errorModel.Error = "invalid_token";
-                errorModel.Description = "The Refresh Token is Invalid";
-                return StatusCode(401, errorModel);
+                return Problem(detail: token.Detail, statusCode: token.StatusCode);
             }
 
             dynamic data = new ExpandoObject();
@@ -532,10 +529,7 @@ public class TokenController : Controller
             }
             else
             {
-                var errorModel = new ErrorModel();
-                errorModel.Error = "invalid_token";
-                errorModel.Description = "The Refresh Token is Invalid";
-                return Results.Json(errorModel, statusCode: 401);
+                return Results.Problem(detail: token.Detail, statusCode: token.StatusCode,extensions:new Dictionary<string,object?>{{"errorCode",token.StatusCode}});
             }
 
             var flowInstanceId = Guid.NewGuid().ToString();
