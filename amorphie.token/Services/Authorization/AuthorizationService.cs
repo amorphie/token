@@ -8,6 +8,7 @@ using amorphie.token.Services.Consent;
 using amorphie.token.core.Models.Profile;
 using System.Text.Json;
 using System.Web;
+using Elastic.Apm.Api;
 
 namespace amorphie.token.Services.Authorization;
 
@@ -15,6 +16,7 @@ public class AuthorizationService : ServiceBase, IAuthorizationService
 {
     private readonly IClientService _clientService;
     private readonly DaprClient _daprClient;
+    private readonly DatabaseContext _databaseContext;
 
 
     public AuthorizationService(ILogger<AuthorizationService> logger, IConfiguration configuration, IClientService clientService, ITagService tagService,
@@ -23,6 +25,7 @@ public class AuthorizationService : ServiceBase, IAuthorizationService
     {
         _clientService = clientService;
         _daprClient = daprClient;
+        _databaseContext = databaseContext;
     }
 
     public async Task<AuthorizationCode> AssignCollectionUserToAuthorizationCode(LoginResponse user, string authorizationCode,core.Models.Collection.User collectionUser)
@@ -44,6 +47,13 @@ public class AuthorizationService : ServiceBase, IAuthorizationService
         var newAuthorizationCodeInfo = authorizationCodeInfo.MapTo<AuthorizationCode>();
         newAuthorizationCodeInfo.Subject = user;
         newAuthorizationCodeInfo.Profile = profile;
+
+        var authCode = _databaseContext.AuthCodes.FirstOrDefault(a => a.Code.Equals(authorizationCode));
+        if(authCode is {})
+        {
+            authCode!.User = user.Reference;
+            await _databaseContext.SaveChangesAsync();
+        }
 
         await _daprClient.SaveStateAsync(Configuration["DAPR_STATE_STORE_NAME"], authorizationCode, newAuthorizationCodeInfo);
         return await _daprClient.GetStateAsync<AuthorizationCode>(Configuration["DAPR_STATE_STORE_NAME"], authorizationCode);
@@ -216,8 +226,17 @@ public class AuthorizationService : ServiceBase, IAuthorizationService
         byte[] bytes = new byte[32];
         rand.GetBytes(bytes);
         var code = Base64UrlEncoder.Encode(bytes);
-
+        var expiredAt = DateTime.UtcNow.AddSeconds(Convert.ToInt32(ttl));
         await _daprClient.SaveStateAsync(Configuration["DAPR_STATE_STORE_NAME"], code, authorizationCode, metadata: new Dictionary<string, string> { { "ttlInSeconds", ttl } });
+
+        var authCode = new AuthCode{
+            Client = authorizationCode.ClientId!,
+            Code = code,
+            ExpiredAt = expiredAt
+        };
+
+        await _databaseContext.AuthCodes.AddAsync(authCode);
+        await _databaseContext.SaveChangesAsync();
 
         return code;
     }

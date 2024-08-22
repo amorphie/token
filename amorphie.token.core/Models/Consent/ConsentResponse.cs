@@ -14,6 +14,7 @@ namespace amorphie.token.core.Models.Consent
         public string? additionalData { get; set; }
         public string? userTCKN{get;set;}
         public string? scope{get;set;}
+        public DateTime? stateModifiedAt{get;set;}
         public List<OBAccountConsentDetailDto>? obAccountConsentDetails{get;set;}
         public string? userType{get;set;}
     }

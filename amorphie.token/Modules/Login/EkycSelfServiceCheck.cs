@@ -40,7 +40,7 @@ public static class EkycSelfServiceCheck
       
 
         variables.Add("Init", true);
-        variables.Add("EkycResult", "SelfServiceCompleted");
+        variables.Add("EkycResult", EkycResultConstants.SelfServiceCompleted);
         variables.Add("EkycButton","None"); // self service ile işlem sonlandığında üst flow için
         
         

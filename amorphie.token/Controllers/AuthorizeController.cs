@@ -162,18 +162,6 @@ public class AuthorizeController : Controller
     }
 
     
-    
-    [HttpGet("/private/Logout")]
-    [ApiExplorerSettings(IgnoreApi = true)]
-    public async Task<IActionResult> Logout([FromQuery] string token)
-    {
-        
-
-        return Ok();
-
-    }
-
-    
     [HttpPost("/post-transition/{recordId}/{transition}")]
     [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<IActionResult> PostTransition([FromRoute] string recordId, [FromRoute] string transition, [FromBody] dynamic body)
@@ -332,6 +320,16 @@ public class AuthorizeController : Controller
     [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<IActionResult> OpenBankingGenerateAuthCode([FromQuery(Name = "rizaNo")] Guid consentId, [FromQuery(Name = "rizaTip")] string consentType)
     {
+        var requestUri = Request.Headers.FirstOrDefault(h => h.Key.ToLowerInvariant().Equals("request_uri"));
+        var requestPath = "/ohvps/gkd/s1.1/yetkilendirme-kodu";
+        var requestTime = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:sszzz");
+        var responseId = Guid.NewGuid();
+
+        dynamic errObj = new ExpandoObject();
+        errObj.path = requestPath;
+        errObj.timestamp = requestTime;
+        errObj.id = responseId;
+
         var consentResponse = await _consentService.GetConsent(consentId);
         
         if (consentResponse.StatusCode == 200)
@@ -342,6 +340,19 @@ public class AuthorizeController : Controller
             if(consent!.state!.Equals("K"))
             {
                 return BadRequest();
+            }
+
+            if(consent.stateModifiedAt?.AddSeconds(300) < DateTime.UtcNow)
+            {
+                errObj.httpCode = 404;
+                errObj.httpMessage = "Not Found";
+                errObj.errorCode = "TR.OHVPS.Resource.NotFound";
+                errObj.moreInformation = "Resource Not Found";
+                errObj.moreInformationTr = "Kaynak bulunamadı.";
+               
+                SignatureHelper.SetXJwsSignatureHeader(HttpContext, _configuration, errObj);
+
+                return StatusCode(404,errObj);
             }
 
             string kmlkNo = consent.userTCKN!;
@@ -362,12 +373,12 @@ public class AuthorizeController : Controller
                 User = user
             });
             var authCode = authResponse.Response!.Code;
-            return StatusCode(201,new{
+            return Content(JsonSerializer.Serialize(new{
                     yetkilendirmeKodu = Guid.NewGuid().ToString(),
                     yetKod = authCode,
                     rizaNo = consentId,
-                    rizaDrm =  "Y"
-            });
+                    rizaDrm =  "Y"}),"application/json"
+            );
         }
         return Forbid();
     }
@@ -566,6 +577,20 @@ public class AuthorizeController : Controller
         return Results.Ok(new{AuthCode=authResponse.Response!.Code});
     }
 
+    [HttpGet("openbanking/redirect/{redirectId}")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> OpenBankingRedirect(Guid redirectId)
+    {
+        var redirectUrl = await _daprClient.GetStateAsync<string>(_configuration["DAPR_STATE_STORE_NAME"], $"OpenBankingRedirect_{redirectId}");
+
+        if(!string.IsNullOrEmpty(redirectUrl))
+        {
+            return Redirect(redirectUrl);
+        }
+
+        return BadRequest();
+    }
+
     [HttpGet("public/OpenBankingAuthorize")]
     [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<IActionResult> OpenBankingAuthorize(OpenBankingAuthorizationRequest authorizationRequest)
@@ -582,21 +607,6 @@ public class AuthorizeController : Controller
             return View("Error");
         }
         var consent = consentResult.Response;
-
-        if(consent!.state!.Equals("I") || consent!.state!.Equals("K") || consent!.state!.Equals("S"))
-        {
-            ViewBag.hasError = true;
-            ViewBag.errorMessage = "Geçersiz Rıza";
-            return View("NewLogin", loginModel);
-        }
-
-        if(!consent!.state!.Equals("B"))
-        {
-            await _consentService.CancelConsent(authorizationRequest.riza_no,"07");
-            ViewBag.hasError = true;
-            ViewBag.errorMessage = "Geçersiz Rıza";
-            return View("NewLogin", loginModel);
-        }
 
         var consentData = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(consent!.additionalData!);
         string kmlkNo = consent.userTCKN!;
@@ -621,10 +631,26 @@ public class AuthorizeController : Controller
         {
             ViewBag.hasError = true;
             ViewBag.errorMessage = Encoding.UTF8.GetString(Convert.FromBase64String(authorizationRequest.error_message));
+            return View("NewLogin", loginModel);
         }
         else
         {
             ViewBag.hasError = false;
+        }
+
+        if(consent!.state!.Equals("I") || consent!.state!.Equals("K") || consent!.state!.Equals("S"))
+        {
+            ViewBag.hasError = true;
+            ViewBag.errorMessage = "Geçersiz Rıza";
+            return View("NewLogin", loginModel);
+        }
+
+        if(!consent!.state!.Equals("B"))
+        {
+            await _consentService.CancelConsent(authorizationRequest.riza_no,"07");
+            ViewBag.hasError = true;
+            ViewBag.errorMessage = "Geçersiz Rıza";
+            return View("NewLogin", loginModel);
         }
         
         // if (customerInfo!.data!.profile!.businessLine == "X")

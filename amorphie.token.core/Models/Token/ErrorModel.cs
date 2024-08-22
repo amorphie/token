@@ -13,6 +13,11 @@ namespace amorphie.token.core.Models.Token
         [JsonPropertyName("errorType")]
         public string? ErrorType{get;set;}
         [JsonPropertyName("error")]
-        public string? Error{get;set;}
+        public InnerErrorModel Error{get;set;} = new();
+    }
+
+    public class InnerErrorModel
+    {
+        public string Description{get;set;} = string.Empty;
     }
 }
