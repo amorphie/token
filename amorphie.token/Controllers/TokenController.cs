@@ -538,7 +538,7 @@ public class TokenController : Controller
             }
             else
             {
-                return Results.Problem(detail: token.Detail, statusCode: token.StatusCode);
+                return Results.Problem(detail: token.Detail, statusCode: token.StatusCode,extensions:new Dictionary<string,object?>{{"errorCode",token.StatusCode}});
             }
 
             var flowInstanceId = Guid.NewGuid().ToString();
