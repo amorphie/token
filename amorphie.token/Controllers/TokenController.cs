@@ -437,9 +437,7 @@ public class TokenController : Controller
             }
             else
             {
-
                 return Problem(detail: token.Detail, statusCode: token.StatusCode);
-
             }
 
             dynamic data = new ExpandoObject();
@@ -540,9 +538,7 @@ public class TokenController : Controller
             }
             else
             {
-
                 return Results.Problem(detail: token.Detail, statusCode: token.StatusCode);
-
             }
 
             var flowInstanceId = Guid.NewGuid().ToString();
