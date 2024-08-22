@@ -15,7 +15,7 @@ namespace amorphie.token.Services
         public RSA LoadKey(string key)
         {
             var rsa = RSA.Create();
-            var privateKey = DeserializeKey(File.ReadAllText(key));
+            var privateKey = DeserializeKey(key);
             rsa.ImportParameters(privateKey);
             return rsa;
         }

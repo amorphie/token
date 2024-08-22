@@ -25,6 +25,8 @@ namespace amorphie.token.Modules.Login
         {
             var transitionName = body.GetProperty("LastTransition").ToString();
 
+            bool isSubflow = Convert.ToBoolean(body.GetProperty("IsSubFlow").ToString());
+
             var dataBody = body.GetProperty($"TRX-{transitionName}").GetProperty("Data");
 
             dynamic dataChanged = Newtonsoft.Json.JsonConvert.DeserializeObject<ExpandoObject>(dataBody.ToString());
@@ -118,14 +120,44 @@ namespace amorphie.token.Modules.Login
                     });
                 }
 
+                
 
-                dataChanged.additionalData = result.Response;
+                
+
+                if(isSubflow)
+                {
+                    try
+                    {
+                        var redirect_params = body.GetProperty("LoginRequest").GetProperty("redirect_params");
+                        dataChanged.additionalData = new{
+                            access_token = result.Response!.AccessToken,
+                            expires_in = result.Response!.ExpiresIn,
+                            id_token = result.Response!.IdToken,
+                            refresh_token = result.Response!.RefreshToken,
+                            refresh_token_expires_in = result.Response!.RefreshTokenExpiresIn,
+                            token_type = result.Response!.TokenType,
+                            scope = result.Response!.scope,
+                            redirect_params
+                        };
+                    }
+                    catch (Exception)
+                    {
+                        
+                    }
+                    
+                }
+                else
+                {
+                    dataChanged.additionalData = result.Response;
+                }
+                
                 targetObject.Data = dataChanged;
                 targetObject.TriggeredBy = Guid.Parse(body.GetProperty($"TRX-{transitionName}").GetProperty("TriggeredBy").ToString());
                 targetObject.TriggeredByBehalfOf = Guid.Parse(body.GetProperty($"TRX-{transitionName}").GetProperty("TriggeredByBehalfOf").ToString());
                 dynamic variables = new Dictionary<string, dynamic>();
                 variables.Add("status", true);
                 variables.Add($"TRX{transitionName.ToString().Replace("-", "")}", targetObject);
+                
                 transactionService.Logon.LogonStatus = LogonStatus.Completed;
                 return Results.Ok(variables);
             }

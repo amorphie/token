@@ -7,4 +7,8 @@ public static class EkycResultConstants
     public static readonly string VideoCallFailed = "VideoCallFailed";
     public static readonly string VideoCallSuccess = "VideoCallSuccess";
     public static readonly string VideoCallCompleted = "VideoCallCompleted";
+
+    public static readonly string FailedOcrMaxTryCount = "FailedOcrMaxTryCount";
+    
+    public static readonly string SelfServiceCompleted = "SelfServiceCompleted";
 }

@@ -1,11 +1,8 @@
 
-using System.Text.Encodings.Web;
-using System.Text.Json;
-using System.Text.Unicode;
 using amorphie.core.Extension;
+using amorphie.core.Middleware.Logging;
 using amorphie.token;
 using amorphie.token.core;
-using amorphie.token.core.Constants;
 using amorphie.token.data;
 using amorphie.token.Middlewares;
 using amorphie.token.Modules.Login;
@@ -25,13 +22,11 @@ using amorphie.token.Services.Migration;
 using amorphie.token.Services.Profile;
 using amorphie.token.Services.Role;
 using amorphie.token.Services.TransactionHandler;
-using Dapr.Extensions.Configuration;
 using Elastic.Apm.NetCoreAll;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Refit;
 using Serilog;
 using Serilog.Formatting.Compact;
@@ -41,10 +36,12 @@ internal partial class Program
    
     private static async Task Main(string[] args)
     {
+        ThreadPool.SetMinThreads(50,50);
+
         var builder = WebApplication.CreateBuilder(args);
         builder.Configuration.AddEnvironmentVariables();
         var client = new DaprClientBuilder().Build();
-        using (var tokenSource = new CancellationTokenSource(20000))
+        using (var tokenSource = new CancellationTokenSource(5000))
         {
             try
             {
@@ -57,7 +54,7 @@ internal partial class Program
             }
         }
         
-        await builder.Configuration.AddVaultSecrets(builder.Configuration["DAPR_SECRET_STORE_NAME"], ["ServiceConnections","Keys"]);
+        await builder.Configuration.AddVaultSecrets(builder.Configuration["DAPR_SECRET_STORE_NAME"], ["ServiceConnections"]);
         //builder.Configuration.AddDaprSecretStore(builder.Configuration["DAPR_SECRET_STORE_NAME"],client, TimeSpan.FromSeconds(15));
         // builder.Configuration.AddJsonStream(new MemoryStream(System.Text.Encoding.ASCII.GetBytes(builder.Configuration["Fcm"])));
         builder.Services.AddAntiforgery(x =>
@@ -85,7 +82,7 @@ internal partial class Program
                 .WriteTo.File(new CompactJsonFormatter(), "amorphie-token-log.json", rollingInterval: RollingInterval.Day)
                 .ReadFrom.Configuration(builder.Configuration)
                 .CreateLogger();
-        builder.Host.UseSerilog(Log.Logger, true);
+        builder.AddSeriLog<AmorphieLogEnricher>();
 
         builder.Services.AddHealthChecks();
         builder.Services.AddControllersWithViews();

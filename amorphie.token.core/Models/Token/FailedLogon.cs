@@ -13,7 +13,7 @@ namespace amorphie.token.core.Models.Token
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public string Reference { get; set; }
+        public string? Reference { get; set; }
         public string ClientId { get; set; }
         public Guid LogonId { get; set; }
         public Logon Logon { get; set; }

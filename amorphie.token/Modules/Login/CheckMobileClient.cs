@@ -21,6 +21,9 @@ namespace amorphie.token.Modules.Login
         )
         {
             var transitionName = body.GetProperty("LastTransition").ToString();
+            
+            bool isSubflow = Convert.ToBoolean(body.GetProperty("IsSubFlow").ToString());
+            
             var requestBodySerialized = body.GetProperty("TRX-" + transitionName).GetProperty("Data").GetProperty(WorkflowConstants.ENTITY_DATA_FIELD).ToString();
             TokenRequest request = JsonSerializer.Deserialize<TokenRequest>(requestBodySerialized);
 
@@ -29,6 +32,15 @@ namespace amorphie.token.Modules.Login
             transactionService.Logon.Reference = request.Username;
 
             dynamic variables = new ExpandoObject();
+
+            if(isSubflow)
+            {
+                variables.RedirectUri = body.GetProperty("LoginRequest").GetProperty("redirect_uri").ToString();
+            }
+            else
+            {
+                variables.RedirectUri = "home";
+            }
             variables.requestBody = requestBodySerialized;
 
             ServiceResponse<ClientResponse> clientResult;

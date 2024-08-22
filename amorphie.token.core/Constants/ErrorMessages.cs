@@ -86,16 +86,16 @@ namespace amorphie.token.core.Constants
 
         public static readonly Dictionary<string, string> OldIdentityCard = new()
         {
-            {"tr-TR","Yeni şifre alma işlemine devam edebilmemiz için yeni tip TC kimlik kartınız olmalıdır.Detaylı bilgi için 0850 222 29 10 numaralı Müşteri İletişim Merkezimiz ile iletişime geçebilirsiniz."},
-            {"en-EN","To proceed with the process of obtaining a new password, you must have the new type of Turkish ID card. For detailed information, you can contact our Customer Communication Center at 0850 222 29 10."},
-            {"en-US","To proceed with the process of obtaining a new password, you must have the new type of Turkish ID card. For detailed information, you can contact our Customer Communication Center at 0850 222 29 10."}
+            {"tr-TR","Yeni şifre alma işlemine devam edebilmemiz için yeni tip TC kimlik kartınız olmalıdır.Detaylı bilgi için {customerServicePhoneNumber} numaralı Müşteri İletişim Merkezimiz ile iletişime geçebilirsiniz."},
+            {"en-EN","To proceed with the process of obtaining a new password, you must have the new type of Turkish ID card. For detailed information, you can contact our Customer Communication Center at {customerServicePhoneNumber}."},
+            {"en-US","To proceed with the process of obtaining a new password, you must have the new type of Turkish ID card. For detailed information, you can contact our Customer Communication Center at {customerServicePhoneNumber}."}
         };
 
         public static readonly Dictionary<string, string> HasNotNfcAndNewIdentityCard = new()
         {
-            {"tr-TR","Hizmet saatleri dışında olduğumuz için şifre alma sürecinize devam edilemedi. 08.00 - 01.00 saatleri arasında görüntülü görüşme ile müşteri temsilcimize bağlanarak veya NFC özelliği bulunan bir cihaz ile yeni şifre alma sürecine devam edebilirsiniz."},
-            {"en-EN","Your password retrieval process could not be completed as we are outside of service hours. You can continue the process by connecting with our customer representative via video call between 08:00 - 01:00, or by using a device with NFC capability."},
-            {"en-US","Your password retrieval process could not be completed as we are outside of service hours. You can continue the process by connecting with our customer representative via video call between 08:00 - 01:00, or by using a device with NFC capability."}
+            {"tr-TR","Hizmet saatleri dışında olduğumuz için şifre alma sürecinize devam edilemedi. {customerServiceHours} saatleri arasında görüntülü görüşme ile müşteri temsilcimize bağlanarak veya NFC özelliği bulunan bir cihaz ile yeni şifre alma sürecine devam edebilirsiniz."},
+            {"en-EN","Your password retrieval process could not be completed as we are outside of service hours. You can continue the process by connecting with our customer representative via video call between {customerServiceHours}, or by using a device with NFC capability."},
+            {"en-US","Your password retrieval process could not be completed as we are outside of service hours. You can continue the process by connecting with our customer representative via video call between {customerServiceHours}, or by using a device with NFC capability."}
         };
 
         public static readonly Dictionary<string, string> WrongCardInfo = new()
@@ -110,5 +110,15 @@ namespace amorphie.token.core.Constants
             {"en-EN","The card information you entered is incorrect. Please check the information to obtain a new password."},
             {"en-US","The card information you entered is incorrect. Please check the information to obtain a new password."}
         };
+
+         public static readonly Dictionary<string, string> EkycOcrMaxTryCountError = new()
+        {
+            {"tr-TR","Yaptığınız denemeler sonucunda güvenliğiniz sebebiyle şifre yenileme sürecini ilerletemiyoruz. Dilerseniz {customerServicePhoneNumber} numaralı Müşteri İletişim Merkezimiz ile iletişime geçebilirsiniz."},
+            {"en-EN","As a result of your attempts, we cannot proceed with the password renewal process due to your security. If you wish, you can contact our Customer Communications Center at {customerServicePhoneNumber}."},
+            {"en-US","As a result of your attempts, we cannot proceed with the password renewal process due to your security. If you wish, you can contact our Customer Communications Center at {customerServicePhoneNumber}."}
+        };
+
+
+
     }
 }

@@ -292,15 +292,21 @@ public class LoginController : Controller
             var userResponse = await _ibUserService.GetUser(openBankingLoginRequest.username!);
             if (userResponse.StatusCode != 200)
             {
-                //TODO
-                return StatusCode(500);
+                return RedirectToAction("OpenBankingAuthorize","Authorize",new
+                {
+                    riza_no=openBankingLoginRequest.consentId,
+                    error_message = Convert.ToBase64String(Encoding.UTF8.GetBytes("Hatalı kullanıcı veya şifre."))
+                });
             }
 
             var passwordResponse = await _ibUserService.GetPassword(userResponse.Response!.Id);
             if (passwordResponse.StatusCode != 200)
             {
-                //TODO
-                return StatusCode(500);
+                return RedirectToAction("OpenBankingAuthorize","Authorize",new
+                {
+                    riza_no=openBankingLoginRequest.consentId,
+                    error_message = Convert.ToBase64String(Encoding.UTF8.GetBytes("Hatalı kullanıcı veya şifre."))
+                });
             }
             var passwordRecord = passwordResponse.Response;
 
@@ -311,7 +317,11 @@ public class LoginController : Controller
                 passwordRecord.AccessFailedCount = (passwordRecord.AccessFailedCount ?? 0) + 1;
                 //TODO - Disable User After Several Failed Login Attemps
                 await _ibContext.SaveChangesAsync();
-                return StatusCode(500);
+                return RedirectToAction("OpenBankingAuthorize","Authorize",new
+                {
+                    riza_no=openBankingLoginRequest.consentId,
+                    error_message = Convert.ToBase64String(Encoding.UTF8.GetBytes("Hatalı kullanıcı veya şifre."))
+                });
             }
             else
             {
@@ -322,8 +332,11 @@ public class LoginController : Controller
             var userInfoResult = await _profileService.GetCustomerSimpleProfile(openBankingLoginRequest.username!);
             if (userInfoResult.StatusCode != 200)
             {
-                //TODO
-                return StatusCode(500);
+                return RedirectToAction("OpenBankingAuthorize","Authorize",new
+                {
+                    riza_no=openBankingLoginRequest.consentId,
+                    error_message = Convert.ToBase64String(Encoding.UTF8.GetBytes("Bir sorun oluştu. Daha sonra tekrar deneyin."))
+                });
             }
 
             var userStatus = await _ibContext.Status.Where(s => s.UserId == userResponse.Response!.Id && (!s.State.HasValue || s.State.Value == 10)).OrderByDescending(s => s.CreatedAt).FirstOrDefaultAsync();
@@ -517,19 +530,25 @@ public class LoginController : Controller
                 await _consentService.UpdateConsentInOtp(consent.id,user.Reference);
             }
 
+            var redirectId = Guid.NewGuid();
+            string redirectTo = string.Empty;
             if (consent!.consentType!.Equals("OB_Account"))
             {
-                return Redirect(_configuration["OpenBankingAccount"] + otpRequest.consentId);
+                redirectTo = _configuration["OpenBankingAccount"] + otpRequest.consentId;
             }
             if (consent!.consentType!.Equals("OB_Payment"))
             {
-                return Redirect(_configuration["OpenBankingPayment"] + otpRequest.consentId);
+                redirectTo = _configuration["OpenBankingPayment"] + otpRequest.consentId;
             }
-            return Forbid();
+
+            await _daprClient.SaveStateAsync(_configuration["DAPR_STATE_STORE_NAME"],$"OpenBankingRedirect_{redirectId}",redirectTo, metadata: new Dictionary<string, string> { { "ttlInSeconds", "20" } });
+
+
+            return Ok(new{redirectUri = $"/openbanking/redirect/{redirectId}"});
         }
         else
         {
-            return Forbid();
+            return StatusCode(401);
         }
     }
 

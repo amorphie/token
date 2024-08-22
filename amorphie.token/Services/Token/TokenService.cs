@@ -54,7 +54,10 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
     private core.Models.Collection.User? _collectionUser;
     private TokenInfo? _refreshTokenInfo;
     private string? _deviceId;
-
+    
+    private DateTime _currentDate = DateTime.Now; 
+    public string DeviceId { set => _deviceId = value;}
+    
     private async Task PersistTokenInfo()
     {
         await WriteToDb();
@@ -174,9 +177,18 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
                 var consentData = Newtonsoft.Json.JsonConvert.DeserializeObject<dynamic>(_consent!.additionalData!);
                 if(_consent.consentType!.Equals("OB_Account"))
                 {
-                    DateTime lastAccessDate = DateTime.Parse(consentData!.hspBlg.iznBlg.erisimIzniSonTrh.ToString());
-                    var DateDiffAsHours = Convert.ToInt32((lastAccessDate.AddMilliseconds(-1) - DateTime.Now).TotalHours);
-                    accessDuration = DateDiffAsHours > 30 * 24 ? (30 * 24 * 60 * 60) : (DateDiffAsHours * 60 * 60); 
+                    if(_tokenRequest.GrantType.Equals("refresh_token"))
+                    {
+                        var DateDiffAsSeconds = Convert.ToInt32((_refreshTokenInfo.ExpiredAt.ToLocalTime() - _currentDate).TotalSeconds);
+                        accessDuration = DateDiffAsSeconds > 30 * 24 * 60 * 60 ? (30 * 24 * 60 * 60) : DateDiffAsSeconds; 
+                    
+                    }
+                    else
+                    {
+                        DateTime lastAccessDate = DateTime.Parse(consentData!.hspBlg.iznBlg.erisimIzniSonTrh.ToString());
+                        var DateDiffAsSeconds = Convert.ToInt32((lastAccessDate.AddMilliseconds(-1) - _currentDate).TotalSeconds);
+                        accessDuration = DateDiffAsSeconds > 30 * 24 * 60 * 60 ? (30 * 24 * 60 * 60) : DateDiffAsSeconds; 
+                    }
                 }
                 if(_consent.consentType.Equals("OB_Payment"))
                 {
@@ -300,8 +312,8 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
                 if(_consent.consentType!.Equals("OB_Account"))
                 {
                     DateTime lastAccessDate = DateTime.Parse(consentData!.hspBlg.iznBlg.erisimIzniSonTrh.ToString());
-                    var DateDiffAsHours = Convert.ToInt32((lastAccessDate.AddMilliseconds(-1) - DateTime.Now).TotalHours);
-                    refreshDuration = DateDiffAsHours * 60 * 60; 
+                    var DateDiffAsSeconds = Convert.ToInt32((lastAccessDate.AddMilliseconds(-1) - _currentDate).TotalSeconds);
+                    refreshDuration = DateDiffAsSeconds; 
                 }
         
                 if(_consent.consentType.Equals("OB_Payment"))
@@ -347,7 +359,7 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
         if(_tokenRequest.GrantType.Equals("refresh_token"))
         {
             tokenResponse.RefreshToken = _tokenRequest.RefreshToken;
-            tokenResponse.RefreshTokenExpiresIn = Convert.ToInt32((_refreshTokenInfo.ExpiredAt - DateTime.Now).TotalSeconds);
+            tokenResponse.RefreshTokenExpiresIn = Convert.ToInt32((_refreshTokenInfo.ExpiredAt.ToLocalTime() - _currentDate).TotalSeconds);
         }
         else
         {
@@ -422,6 +434,16 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
         //OpenBanking Set Consent
         if(relatedToken.ConsentId is Guid)
         {
+            if(!relatedToken.ConsentId.Equals(tokenRequest.ConsentId))
+            {
+                return new ServiceResponse<TokenResponse>()
+                {
+                    StatusCode = 484,
+                    Detail = "Consent Mismatch",
+                    Response = null
+                };
+            }
+
             var consent = await _consentService.GetConsent(relatedToken.ConsentId.Value);
             _consent = consent.Response;
         }
@@ -1114,6 +1136,7 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
     {
         _tokenRequest = tokenRequest;
         _user = null;
+        
         ServiceResponse<ClientResponse> clientResponse;
         if (Guid.TryParse(_tokenRequest.ClientId!, out Guid _))
         {
@@ -1454,6 +1477,28 @@ ITransactionService transactionService, CollectionUsers collectionUsers, IRoleSe
         _transactionService.RoleKey = dodgeRoleKey.HasValue ? dodgeRoleKey.Value : 0;
         _transactionService.Client = client;
         _refreshTokenInfo = refreshTokenInfo;
+
+        var consentListResponse = await _roleService!.GetConsents(_client!.id!, _user.Reference);
+        if(consentListResponse.StatusCode == 200)
+        {
+            var consentList = consentListResponse.Response;
+
+            var selectedConsent = consentList!.FirstOrDefault();
+            _selectedConsent = selectedConsent;
+
+            var roleResponse = await _roleService.GetRole(selectedConsent!.RoleId);
+            if(roleResponse.StatusCode == 200)
+            {
+                var amorphieRole = roleResponse.Response;
+                _role = amorphieRole;
+                var roleDefinition = await _roleService.GetRoleDefinition(_role!.DefinitionId);
+                if(roleDefinition.StatusCode == 200)
+                {
+                    _roleDefinition = roleDefinition.Response;
+                }
+            }
+            
+        }
 
         _tokenRequest = new GenerateTokenRequest{
              GrantType = "refresh_token"

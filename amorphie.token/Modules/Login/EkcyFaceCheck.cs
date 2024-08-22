@@ -15,6 +15,9 @@ public static class EkcyFaceCheck
     {
 
         var transitionName = body.GetProperty("LastTransition").ToString();
+        int faceFailedTryCount = EkycConstants.FaceFailedTryCount;
+        Int32.TryParse(body.GetProperty("FaceFailedTryCount")?.ToString(), out faceFailedTryCount);
+
         // var transactionId = body.GetProperty("InstanceId").ToString();
         var dataBody = body.GetProperty($"TRX-{transitionName}").GetProperty("Data");
 
@@ -25,25 +28,21 @@ public static class EkcyFaceCheck
         var faceIsSuccess = dataChanged.entityData.IsSuccess;
         dynamic variables = new Dictionary<string, dynamic>();
         dataChanged.additionalData = new ExpandoObject();
+        var callType = body.GetProperty("CallType").ToString();
+        var instance = body.GetProperty("Instance").ToString();
+        dataChanged.additionalData.isEkyc = true;// gitmek istediği data 
+        dataChanged.additionalData.callType = callType;
+        var ApplicantFullName = body.GetProperty("ApplicantFullName").ToString();
+        dataChanged.additionalData.applicantFullName = ApplicantFullName;
+
+        dataChanged.additionalData.instanceId = instance;
+
+
         var isSkip = dataChanged.entityData.IsSkip;
         variables.Add("IsSkip", isSkip);
         bool faceStatus = false;
         if (!isSkip)
         {
-
-            var callType = body.GetProperty("CallType").ToString();
-            var instance = body.GetProperty("Instance").ToString();
-            // var name = body.GetProperty("Name").ToString();
-            // var surname = body.GetProperty("Surname").ToString();
-            dataChanged.additionalData.isEkyc = true;// gitmek istediği data 
-            dataChanged.additionalData.callType = callType;
-            var ApplicantFullName = body.GetProperty("ApplicantFullName").ToString();
-            dataChanged.additionalData.applicantFullName = ApplicantFullName;
-            // dataChanged.additionalData.customerName = name; // bu kısımları doldur.
-            // dataChanged.additionalData.customerSurname = surname;
-            dataChanged.additionalData.instanceId = instance;
-
-
             var sessionId = body.GetProperty("SessionId").ToString();
             if (faceIsSuccess && !String.IsNullOrEmpty(sessionId))
             {
@@ -62,29 +61,33 @@ public static class EkcyFaceCheck
             if (!faceStatus)
             {
 
-
+                faceCurrentFailedCount++;
                 //Max-Min try count 
-                if (faceCurrentFailedCount >= EkycConstants.FaceFailedTryCount || faceCurrentFailedCount==0)
-                {
-                    dataChanged.additionalData.pages = new List<EkycPageModel>
-                    {
-                        EkycAdditionalDataContstants.StandartItem,
-                        EkycAdditionalDataContstants.FaceFailedBiggerThanMinForRetry
-                    };
+                if (faceCurrentFailedCount < faceFailedTryCount)
 
-                }
-                if (faceCurrentFailedCount >= EkycConstants.FaceFailedMaxTryCount)
                 {
-                    //Min try additional data
                     dataChanged.additionalData.pages = new List<EkycPageModel>
                     {
                         EkycAdditionalDataContstants.StandartItem,
                         EkycAdditionalDataContstants.FaceFailedMinForRetry
                     };
+ 
+                }
+
+                if (faceCurrentFailedCount >= faceFailedTryCount)
+
+                {
+                    //Min try additional data
+                    dataChanged.additionalData.pages = new List<EkycPageModel>
+                    {
+                        EkycAdditionalDataContstants.StandartItem,
+                        EkycAdditionalDataContstants.FaceFailedBiggerThanMinForRetry
+                    };
                 }
 
 
                 faceCurrentFailedCount++;
+
             }
 
             if (faceStatus && faceIsSuccess)
@@ -102,6 +105,14 @@ public static class EkcyFaceCheck
 
             // variables.Add("IsSelfServiceAvaliable", true); // bu client dan alınacak sanırım
             variables.Add("CurrentFaceFailedCount", faceCurrentFailedCount);
+        }
+        else
+        {
+            dataChanged.additionalData.pages = new List<EkycPageModel>
+                {
+                    EkycAdditionalDataContstants.StandartItem,
+                    EkycAdditionalDataContstants.SkipFaceForVideoCall
+                };
         }
         dataChanged.additionalData.exitTransition = "amorphie-ekyc-exit";
         variables.Add("FaceReadStatus", faceStatus);

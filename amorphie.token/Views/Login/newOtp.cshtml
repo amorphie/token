@@ -62,19 +62,25 @@
                                 </div>
                                 <section class="margin0">
                                     <label class="input">
+                                        <form method="GET" id="redirect-form"></form>
                                         <form id="otp-form" asp-action="ValidateOtp" asp-controller="Login"
                                             method="post">
-                                            <input asp-for="OtpValue" type="password"
-                                                placeholder="SMS Doğrulama Kodu" />
+                                            <input asp-for="OtpValue" type="password" 
+                                                placeholder="@(String.IsNullOrWhiteSpace(Model.OtpValue) ? "SMS Doğrulama Kodu" : String.Concat(Model.OtpValue.ToCharArray().Select(p=>"*")))" />
                                             <input asp-for="transactionId" type="hidden" />
                                             <input asp-for="consentId" type="hidden" />
                                         </form>
                                         <span class="ErrPan" style="display: none;">
-                                            asdfsd fsaf
+                                            
                                         </span>
                                     </label>
                                 </section>
                                 <div class="BtnPan center">
+                                    
+                                    <div class="alert alert-danger" id="alert-area" role="alert" style="display:none;">
+                                        
+                                    </div>
+                                    
                                     <button id="otp-submit" type="submit" class="Lbutton">
                                         GÖNDER
                                     </button>
@@ -130,7 +136,7 @@
         </div>
     </div>
 
-    <script src="/ebanking/login/assets/js/otp.js"></script>
+    <script src="/ebanking/login/assets/js/new-otp.js"></script>
 
 </body>
 
