@@ -84,9 +84,7 @@ public static class EkycNfcCheck
 
                     EkycAdditionalDataContstants.NfcFailedMinForRetry,
                     EkycAdditionalDataContstants.OcrSuccessForNfcItem
-
-                };
- 
+                }; 
                 }
 
                 if (nfcCurrentFailedCount >= nfcFailedTryCount)
